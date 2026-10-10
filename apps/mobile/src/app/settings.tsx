@@ -13,54 +13,29 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 
 import '@/localization/i18n';
+import SelectionModal, { type SelectionOption } from '@/components/selection-modal';
+import {
+  languageOptions,
+  regionOptions,
+  timeZoneOptions,
+  getOptionLabel,
+} from '@/constants/preference-options';
 import { usePreferences } from '@/contexts/preferences-context';
 import type { UserPreferences } from '@/services/preferences';
 
-const languages = [
-  { value: 'en', label: 'English' },
-  { value: 'zh-TW', label: '繁體中文' },
-  { value: 'ja', label: '日本語' },
-];
 
-const regions = [
-  { value: 'US', label: 'United States' },
-  { value: 'TW', label: 'Taiwan' },
-  { value: 'JP', label: 'Japan' },
-  { value: 'KR', label: 'South Korea' },
-  { value: 'GB', label: 'United Kingdom' },
-  { value: 'CA', label: 'Canada' },
-  { value: 'AU', label: 'Australia' },
-];
-
-const timeZones = [
-  { value: 'America/New_York', label: 'New York' },
-  { value: 'America/Los_Angeles', label: 'Los Angeles' },
-  { value: 'America/Toronto', label: 'Toronto' },
-  { value: 'Asia/Taipei', label: 'Taipei' },
-  { value: 'Asia/Tokyo', label: 'Tokyo' },
-  { value: 'Asia/Seoul', label: 'Seoul' },
-  { value: 'Europe/London', label: 'London' },
-  { value: 'Australia/Sydney', label: 'Sydney' },
-];
-
-type Option = { value: string; label: string };
-
-function nextValue(current: string, options: Option[]) {
-  const index = options.findIndex((x) => x.value === current);
-  return options[(index + 1) % options.length].value;
-}
-
-function displayValue(current: string, options: Option[]) {
-  return options.find((x) => x.value === current)?.label ?? current;
-}
 
 export default function SettingsScreen() {
   const { t } = useTranslation();
   const { preferences, loading, updatePreferences } = usePreferences();
 
   const [draft, setDraft] = useState<UserPreferences>(preferences);
+  const [activeSelection, setActiveSelection] = useState<{
+    field: 'language' | 'region' | 'timeZone';
+    options: SelectionOption[];
+  } | null>(null);
   const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState<'success' | 'error' | ''>('');
 
   useEffect(() => {
     setDraft(preferences);
@@ -68,12 +43,9 @@ export default function SettingsScreen() {
 
   function changeSetting(
     field: 'language' | 'region' | 'timeZone',
-    options: Option[]
+    options: SelectionOption[]
   ) {
-    setDraft((current) => ({
-      ...current,
-      [field]: nextValue(current[field], options),
-    }));
+    setActiveSelection({ field, options });
     setMessage('');
   }
 
@@ -85,14 +57,14 @@ export default function SettingsScreen() {
 
     try {
       await updatePreferences(draft);
-      setMessage('Settings saved successfully.');
+      setMessage('success');
     } catch (error) {
       console.error('Failed to save settings:', error);
 
       if (Platform.OS === 'web') {
-        setMessage('Unable to save settings.');
+        setMessage('error');
       } else {
-        Alert.alert('Error', 'Unable to save settings.');
+        Alert.alert(t('settings'), t('settingsSaveError'));
       }
     } finally {
       setSaving(false);
@@ -113,32 +85,31 @@ export default function SettingsScreen() {
         <Text style={styles.eyebrow}>ADO FAN HUB</Text>
         <Text style={styles.title}>{t('settings')}</Text>
         <Text style={styles.subtitle}>
-          Customize your Ado experience.
+          {t('settingsSubtitle')}
         </Text>
 
         <View style={styles.card}>
           <SettingRow
             label={t('language')}
-            value={displayValue(draft.language, languages)}
-            onPress={() => changeSetting('language', languages)}
+            value={getOptionLabel(draft.language, languageOptions)}
+            onPress={() => changeSetting('language', languageOptions)}
           />
 
           <SettingRow
             label={t('region')}
-            value={displayValue(draft.region, regions)}
-            onPress={() => changeSetting('region', regions)}
+            value={getOptionLabel(draft.region, regionOptions)}
+            onPress={() => changeSetting('region', regionOptions)}
           />
 
           <SettingRow
             label={t('timeZone')}
-            value={displayValue(draft.timeZone, timeZones)}
-            onPress={() => changeSetting('timeZone', timeZones)}
+            value={getOptionLabel(draft.timeZone, timeZoneOptions)}
+            onPress={() => changeSetting('timeZone', timeZoneOptions)}
           />
         </View>
 
         <Text style={styles.hint}>
-          Tap a setting to change its value.
-          Changes take effect after saving.
+          {t('settingsHint')}
         </Text>
 
         <Pressable
@@ -147,17 +118,33 @@ export default function SettingsScreen() {
           disabled={saving}
         >
           <Text style={styles.saveText}>
-            {saving ? 'Saving...' : t('save')}
+            {saving ? t('settingsSaving') : t('save')}
           </Text>
         </Pressable>
 
         {message !== '' && (
-          <Text style={styles.message}>{message}</Text>
+          <Text style={styles.message}>{t(message === 'success' ? 'settingsSaved' : 'settingsSaveError')}</Text>
         )}
 
         <Text style={styles.footer}>
-          Unofficial fan project · Not affiliated with Ado
+          {t('homeFooter')}
         </Text>
+        {activeSelection !== null && (
+          <SelectionModal
+            visible={true}
+            title={t(activeSelection.field)}
+            options={activeSelection.options}
+            selectedValue={draft[activeSelection.field]}
+            onSelect={(value) => {
+              setDraft((current) => ({
+                ...current,
+                [activeSelection.field]: value,
+              }));
+              setMessage('');
+            }}
+            onClose={() => setActiveSelection(null)}
+          />
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -272,3 +259,8 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
 });
+
+
+
+
+

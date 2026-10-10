@@ -1,5 +1,6 @@
-import { Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+﻿import { Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 
 const COLORS = {
   background: '#0B0B12',
@@ -10,30 +11,16 @@ const COLORS = {
   muted: '#A9A6B6',
 };
 
-const sections = [
-  {
-    icon: '📰',
-    title: 'Latest News',
-    description: 'Official announcements and updates',
-  },
-  {
-    icon: '🎤',
-    title: 'Concerts',
-    description: 'Upcoming events and reminders',
-  },
-  {
-    icon: '🛍️',
-    title: 'Merchandise',
-    description: 'New releases and restock tracking',
-  },
-  {
-    icon: '💜',
-    title: 'Fan Community',
-    description: 'Connect with Ado fans worldwide',
-  },
-];
 
 export default function HomeScreen() {
+  const { t } = useTranslation();
+
+  const sections = [
+    { icon: '📰', title: t('homeNewsTitle'), description: t('homeNewsDescription') },
+    { icon: '🎤', title: t('homeConcertsTitle'), description: t('homeConcertsDescription') },
+    { icon: '🛍️', title: t('homeMerchTitle'), description: t('homeMerchDescription') },
+    { icon: '💜', title: t('homeCommunityTitle'), description: t('homeCommunityDescription') },
+  ];
   return (
     <View style={styles.container}>
       <SafeAreaView style={styles.safeArea} edges={['top']}>
@@ -43,7 +30,7 @@ export default function HomeScreen() {
         >
           <View style={styles.header}>
             <View>
-              <Text style={styles.eyebrow}>YOUR ADO COMPANION</Text>
+              <Text style={styles.eyebrow}>{t('homeEyebrow')}</Text>
               <Text style={styles.title}>Ado Fan Hub</Text>
             </View>
 
@@ -53,17 +40,16 @@ export default function HomeScreen() {
           </View>
 
           <View style={styles.hero}>
-            <Text style={styles.heroLabel}>WELCOME</Text>
+            <Text style={styles.heroLabel}>{t('homeWelcome')}</Text>
             <Text style={styles.heroTitle}>
-              Stay connected with Ado.
+              {t('homeHeroTitle')}
             </Text>
             <Text style={styles.heroDescription}>
-              Your favorite updates, concerts, and merchandise —
-              all in one place.
+              {t('homeHeroDescription')}
             </Text>
           </View>
 
-          <Text style={styles.sectionHeading}>Explore</Text>
+          <Text style={styles.sectionHeading}>{t('homeExplore')}</Text>
 
           <View style={styles.grid}>
             {sections.map((item) => (
@@ -78,16 +64,14 @@ export default function HomeScreen() {
           </View>
 
           <View style={styles.notice}>
-            <Text style={styles.noticeTitle}>🚧 Under Development</Text>
+            <Text style={styles.noticeTitle}>🚧 {t('homeDevelopmentTitle')}</Text>
             <Text style={styles.noticeText}>
-              Ado Fan Hub is an independent fan-made project.
-              Live news, notifications, and tracking features
-              are coming in future updates.
+              {t('homeDevelopmentText')}
             </Text>
           </View>
 
           <Text style={styles.footer}>
-            Unofficial fan project · Not affiliated with Ado
+            {t('homeFooter')}
           </Text>
         </ScrollView>
       </SafeAreaView>
@@ -222,3 +206,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 });
+
+
+

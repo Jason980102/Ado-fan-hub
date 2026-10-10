@@ -10,98 +10,38 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 
+import SelectionModal, { type SelectionOption } from '@/components/selection-modal';
+import {
+  languageOptions,
+  regionOptions,
+  timeZoneOptions,
+  getOptionLabel,
+} from '@/constants/preference-options';
 import { usePreferences } from '@/contexts/preferences-context';
 import type { UserPreferences } from '@/services/preferences';
 
-type Option = {
-  value: string;
-  label: string;
-};
-
-const languages: Option[] = [
-  { value: 'en', label: 'English' },
-  { value: 'zh-TW', label: '繁體中文' },
-  { value: 'ja', label: '日本語' },
-];
-
-const regions: Option[] = [
-  { value: 'US', label: 'United States' },
-  { value: 'TW', label: 'Taiwan' },
-  { value: 'JP', label: 'Japan' },
-  { value: 'KR', label: 'South Korea' },
-  { value: 'GB', label: 'United Kingdom' },
-  { value: 'CA', label: 'Canada' },
-  { value: 'AU', label: 'Australia' },
-];
-
-const timeZones: Option[] = [
-  { value: 'America/New_York', label: 'New York' },
-  { value: 'America/Los_Angeles', label: 'Los Angeles' },
-  { value: 'America/Toronto', label: 'Toronto' },
-  { value: 'Asia/Taipei', label: 'Taipei' },
-  { value: 'Asia/Tokyo', label: 'Tokyo' },
-  { value: 'Asia/Seoul', label: 'Seoul' },
-  { value: 'Europe/London', label: 'London' },
-  { value: 'Australia/Sydney', label: 'Sydney' },
-];
-
-function nextValue(current: string, options: Option[]) {
-  const index = options.findIndex((item) => item.value === current);
-  return options[(index + 1) % options.length].value;
-}
-
-function displayValue(current: string, options: Option[]) {
-  return options.find((item) => item.value === current)?.label ?? current;
-}
-
-const translations = {
-  en: {
-    title: 'Welcome to Ado Fan Hub',
-    subtitle: 'Personalize your fan experience.',
-    language: 'Language',
-    region: 'Country / Region',
-    timeZone: 'Time Zone',
-    start: 'Get Started',
-    hint: 'Tap each setting to change its value.',
-  },
-  'zh-TW': {
-    title: '歡迎使用 Ado Fan Hub',
-    subtitle: '打造你的個人化粉絲體驗。',
-    language: '語言',
-    region: '國家 / 地區',
-    timeZone: '時區',
-    start: '開始使用',
-    hint: '點擊設定項目即可切換選項。',
-  },
-  ja: {
-    title: 'Ado Fan Hub へようこそ',
-    subtitle: 'あなたに合ったファン体験を設定しましょう。',
-    language: '言語',
-    region: '国・地域',
-    timeZone: 'タイムゾーン',
-    start: 'はじめる',
-    hint: '各項目をタップして変更できます。',
-  },
-};
 
 export default function OnboardingScreen() {
+  const { t } = useTranslation();
   const { preferences, updatePreferences } = usePreferences();
 
   const [draft, setDraft] = useState<UserPreferences>(preferences);
+  const [activeSelection, setActiveSelection] = useState<{
+    field: 'language' | 'region' | 'timeZone';
+    options: SelectionOption[];
+  } | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
-  const text = translations[draft.language];
+
 
   function changeSetting(
     field: 'language' | 'region' | 'timeZone',
-    options: Option[]
+    options: SelectionOption[]
   ) {
-    setDraft((current) => ({
-      ...current,
-      [field]: nextValue(current[field], options),
-    }));
+    setActiveSelection({ field, options });
     setError('');
   }
 
@@ -118,7 +58,7 @@ export default function OnboardingScreen() {
       });
     } catch (err) {
       console.error('Failed to complete onboarding:', err);
-      setError('Unable to save settings. Please try again.');
+      setError(t('onboardingSaveError', { lng: draft.language }));
 
       if (Platform.OS !== 'web') {
         Alert.alert(
@@ -137,30 +77,30 @@ export default function OnboardingScreen() {
         <Text style={styles.brand}>ADO FAN HUB</Text>
 
         <Text style={styles.eyebrow}>WELCOME</Text>
-        <Text style={styles.title}>{text.title}</Text>
-        <Text style={styles.subtitle}>{text.subtitle}</Text>
+        <Text style={styles.title}>{t('welcome', { lng: draft.language })}</Text>
+        <Text style={styles.subtitle}>{t('onboardingSubtitle', { lng: draft.language })}</Text>
 
         <View style={styles.card}>
           <SettingRow
-            label={text.language}
-            value={displayValue(draft.language, languages)}
-            onPress={() => changeSetting('language', languages)}
+            label={t('language', { lng: draft.language })}
+            value={getOptionLabel(draft.language, languageOptions)}
+            onPress={() => changeSetting('language', languageOptions)}
           />
 
           <SettingRow
-            label={text.region}
-            value={displayValue(draft.region, regions)}
-            onPress={() => changeSetting('region', regions)}
+            label={t('region', { lng: draft.language })}
+            value={getOptionLabel(draft.region, regionOptions)}
+            onPress={() => changeSetting('region', regionOptions)}
           />
 
           <SettingRow
-            label={text.timeZone}
-            value={displayValue(draft.timeZone, timeZones)}
-            onPress={() => changeSetting('timeZone', timeZones)}
+            label={t('timeZone', { lng: draft.language })}
+            value={getOptionLabel(draft.timeZone, timeZoneOptions)}
+            onPress={() => changeSetting('timeZone', timeZoneOptions)}
           />
         </View>
 
-        <Text style={styles.hint}>{text.hint}</Text>
+        <Text style={styles.hint}>{t('onboardingHint', { lng: draft.language })}</Text>
 
         <Pressable
           style={[styles.button, saving && styles.disabled]}
@@ -170,7 +110,7 @@ export default function OnboardingScreen() {
           {saving ? (
             <ActivityIndicator color="#FFFFFF" />
           ) : (
-            <Text style={styles.buttonText}>{text.start} →</Text>
+            <Text style={styles.buttonText}>{t('getStarted', { lng: draft.language })} →</Text>
           )}
         </Pressable>
 
@@ -181,6 +121,22 @@ export default function OnboardingScreen() {
         <Text style={styles.footer}>
           Unofficial fan project · No account required
         </Text>
+        {activeSelection !== null && (
+          <SelectionModal
+            visible={true}
+            title={t(activeSelection.field, { lng: draft.language })}
+            options={activeSelection.options}
+            selectedValue={draft[activeSelection.field]}
+            onSelect={(value) => {
+              setDraft((current) => ({
+                ...current,
+                [activeSelection.field]: value,
+              }));
+              setError('');
+            }}
+            onClose={() => setActiveSelection(null)}
+          />
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -299,3 +255,6 @@ const styles = StyleSheet.create({
     marginTop: 22,
   },
 });
+
+
+

@@ -1,5 +1,6 @@
 ﻿import { Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 
 type PlaceholderScreenProps = {
   title: string;
@@ -12,6 +13,7 @@ export default function PlaceholderScreen({
   subtitle,
   features,
 }: PlaceholderScreenProps) {
+  const { t } = useTranslation();
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView contentContainerStyle={styles.content}>
@@ -20,9 +22,9 @@ export default function PlaceholderScreen({
         <Text style={styles.subtitle}>{subtitle}</Text>
 
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Coming Soon</Text>
+          <Text style={styles.cardTitle}>{t('comingSoon')}</Text>
           <Text style={styles.description}>
-            We are working on these features:
+            {t('workingOnFeatures')}
           </Text>
 
           {features.map((feature) => (
@@ -33,7 +35,7 @@ export default function PlaceholderScreen({
         </View>
 
         <Text style={styles.footer}>
-          Unofficial fan project · Under development
+          {t('developmentFooter')}
         </Text>
       </ScrollView>
     </SafeAreaView>
@@ -99,4 +101,5 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
 });
+
 

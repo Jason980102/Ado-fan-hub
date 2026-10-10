@@ -8,26 +8,28 @@
 } from 'expo-router/ui';
 
 import { Pressable, View, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { ThemedText } from './themed-text';
 import { ThemedView } from './themed-view';
 
 export default function AppTabs() {
+  const { t } = useTranslation();
   return (
     <Tabs>
       <TabSlot style={{ height: '100%' }} />
       <TabList asChild>
         <CustomTabList>
           <TabTrigger name="home" href="/" asChild>
-            <TabButton>Home</TabButton>
+            <TabButton>{t('home')}</TabButton>
           </TabTrigger>
           <TabTrigger name="news" href="/news" asChild>
-            <TabButton>News</TabButton>
+            <TabButton>{t('news')}</TabButton>
           </TabTrigger>
           <TabTrigger name="following" href="/following" asChild>
-            <TabButton>Following</TabButton>
+            <TabButton>{t('following')}</TabButton>
           </TabTrigger>
           <TabTrigger name="settings" href="/settings" asChild>
-            <TabButton>Settings</TabButton>
+            <TabButton>{t('settings')}</TabButton>
           </TabTrigger>
         </CustomTabList>
       </TabList>
@@ -117,3 +119,4 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 });
+

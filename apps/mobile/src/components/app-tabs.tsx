@@ -1,6 +1,9 @@
 ﻿import { NativeTabs } from 'expo-router/unstable-native-tabs';
+import { useTranslation } from 'react-i18next';
 
 export default function AppTabs() {
+  const { t } = useTranslation();
+
   return (
     <NativeTabs
       backgroundColor="#111119"
@@ -8,34 +11,42 @@ export default function AppTabs() {
       labelStyle={{ selected: { color: '#C8B4FF' } }}
     >
       <NativeTabs.Trigger name="index">
-        <NativeTabs.Trigger.Label>Home</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Label>
+          {t('home')}
+        </NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
-          src={require('@/assets/images/tabIcons/home.png')}
-          renderingMode="template"
+          sf="house.fill"
+          md="home"
         />
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="news">
-        <NativeTabs.Trigger.Label>News</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Label>
+          {t('news')}
+        </NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
-          src={require('@/assets/images/tabIcons/explore.png')}
-          renderingMode="template"
+          sf="newspaper.fill"
+          md="article"
         />
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="following">
-        <NativeTabs.Trigger.Label>Following</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Label>
+          {t('following')}
+        </NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
-          src={require('@/assets/images/tabIcons/home.png')}
-          renderingMode="template"
+          sf="heart.fill"
+          md="favorite"
         />
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="settings">
-        <NativeTabs.Trigger.Label>Settings</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Label>
+          {t('settings')}
+        </NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
-          src={require('@/assets/images/tabIcons/explore.png')}
-          renderingMode="template"
+          sf="gearshape.fill"
+          md="settings"
         />
       </NativeTabs.Trigger>
     </NativeTabs>

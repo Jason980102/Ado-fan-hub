@@ -1,15 +1,19 @@
-﻿import PlaceholderScreen from '@/components/placeholder-screen';
+﻿import { useTranslation } from 'react-i18next';
+
+import PlaceholderScreen from '@/components/placeholder-screen';
 
 export default function FollowingScreen() {
+  const { t } = useTranslation();
+
   return (
     <PlaceholderScreen
-      title="Following"
-      subtitle="Your personalized Ado tracking center."
+      title={t('followingTitle')}
+      subtitle={t('followingSubtitle')}
       features={[
-        'Follow merchandise releases',
-        'Save concerts and events',
-        'Manage your watchlist',
-        'Receive personalized reminders',
+        t('followingFeature1'),
+        t('followingFeature2'),
+        t('followingFeature3'),
+        t('followingFeature4'),
       ]}
     />
   );

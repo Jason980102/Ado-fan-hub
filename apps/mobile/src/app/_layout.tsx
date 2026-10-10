@@ -17,6 +17,8 @@ import {
 
 SplashScreen.preventAutoHideAsync();
 
+const SHOW_ONBOARDING_PREVIEW = false;
+
 function AppContent() {
   const { preferences, loading } = usePreferences();
 
@@ -28,7 +30,7 @@ function AppContent() {
     );
   }
 
-  if (!preferences.onboardingCompleted) {
+  if ((__DEV__ && SHOW_ONBOARDING_PREVIEW) || !preferences.onboardingCompleted) {
     return <OnboardingScreen />;
   }
 
@@ -58,3 +60,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 });
+
+
+
