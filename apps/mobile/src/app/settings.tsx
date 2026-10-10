@@ -13,12 +13,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 
 import '@/localization/i18n';
-import {
-  getDefaultPreferences,
-  loadPreferences,
-  savePreferences,
-  type UserPreferences,
-} from '@/services/preferences';
+import { usePreferences } from '@/contexts/preferences-context';
+import type { UserPreferences } from '@/services/preferences';
 
 const languages = [
   { value: 'en', label: 'English' },
@@ -47,63 +43,52 @@ const timeZones = [
   { value: 'Australia/Sydney', label: 'Sydney' },
 ];
 
-function nextValue(
-  current: string,
-  options: { value: string; label: string }[]
-) {
-  const index = options.findIndex(
-    (option) => option.value === current
-  );
+type Option = { value: string; label: string };
+
+function nextValue(current: string, options: Option[]) {
+  const index = options.findIndex((x) => x.value === current);
   return options[(index + 1) % options.length].value;
 }
 
-function displayValue(
-  current: string,
-  options: { value: string; label: string }[]
-) {
-  return options.find(
-    (option) => option.value === current
-  )?.label ?? current;
+function displayValue(current: string, options: Option[]) {
+  return options.find((x) => x.value === current)?.label ?? current;
 }
 
 export default function SettingsScreen() {
-  const { t, i18n } = useTranslation();
-  const [preferences, setPreferences] = useState<UserPreferences>(
-    getDefaultPreferences
-  );
-  const [loading, setLoading] = useState(true);
+  const { t } = useTranslation();
+  const { preferences, loading, updatePreferences } = usePreferences();
+
+  const [draft, setDraft] = useState<UserPreferences>(preferences);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
 
   useEffect(() => {
-    let active = true;
+    setDraft(preferences);
+  }, [preferences]);
 
-    loadPreferences()
-      .then(async (saved) => {
-        if (!active) return;
-        setPreferences(saved);
-        await i18n.changeLanguage(saved.language);
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [i18n]);
+  function changeSetting(
+    field: 'language' | 'region' | 'timeZone',
+    options: Option[]
+  ) {
+    setDraft((current) => ({
+      ...current,
+      [field]: nextValue(current[field], options),
+    }));
+    setMessage('');
+  }
 
   async function handleSave() {
     if (saving) return;
+
     setSaving(true);
     setMessage('');
 
     try {
-      await savePreferences(preferences);
-      await i18n.changeLanguage(preferences.language);
-      setMessage(t('settingsSaved'));
+      await updatePreferences(draft);
+      setMessage('Settings saved successfully.');
     } catch (error) {
-      console.error('Failed to save preferences:', error);
+      console.error('Failed to save settings:', error);
+
       if (Platform.OS === 'web') {
         setMessage('Unable to save settings.');
       } else {
@@ -112,23 +97,6 @@ export default function SettingsScreen() {
     } finally {
       setSaving(false);
     }
-  }
-
-  function SettingRow({
-    label,
-    value,
-    onPress,
-  }: {
-    label: string;
-    value: string;
-    onPress: () => void;
-  }) {
-    return (
-      <Pressable style={styles.row} onPress={onPress}>
-        <Text style={styles.rowLabel}>{label}</Text>
-        <Text style={styles.rowValue}>{value} ›</Text>
-      </Pressable>
-    );
   }
 
   if (loading) {
@@ -151,63 +119,40 @@ export default function SettingsScreen() {
         <View style={styles.card}>
           <SettingRow
             label={t('language')}
-            value={displayValue(preferences.language, languages)}
-            onPress={() => {
-              const language = nextValue(
-                preferences.language,
-                languages
-              ) as UserPreferences['language'];
-
-              setPreferences((prev) => ({
-                ...prev,
-                language,
-              }));
-              setMessage('');
-            }}
+            value={displayValue(draft.language, languages)}
+            onPress={() => changeSetting('language', languages)}
           />
 
           <SettingRow
             label={t('region')}
-            value={displayValue(preferences.region, regions)}
-            onPress={() => {
-              setPreferences((prev) => ({
-                ...prev,
-                region: nextValue(prev.region, regions),
-              }));
-              setMessage('');
-            }}
+            value={displayValue(draft.region, regions)}
+            onPress={() => changeSetting('region', regions)}
           />
 
           <SettingRow
             label={t('timeZone')}
-            value={displayValue(preferences.timeZone, timeZones)}
-            onPress={() => {
-              setPreferences((prev) => ({
-                ...prev,
-                timeZone: nextValue(prev.timeZone, timeZones),
-              }));
-              setMessage('');
-            }}
+            value={displayValue(draft.timeZone, timeZones)}
+            onPress={() => changeSetting('timeZone', timeZones)}
           />
         </View>
 
         <Text style={styles.hint}>
           Tap a setting to change its value.
-          Your preferences are saved on this device.
+          Changes take effect after saving.
         </Text>
 
         <Pressable
           style={[styles.saveButton, saving && styles.disabled]}
-          disabled={saving}
           onPress={handleSave}
+          disabled={saving}
         >
           <Text style={styles.saveText}>
             {saving ? 'Saving...' : t('save')}
           </Text>
         </Pressable>
 
-        {!!message && (
-          <Text style={styles.success}>{message}</Text>
+        {message !== '' && (
+          <Text style={styles.message}>{message}</Text>
         )}
 
         <Text style={styles.footer}>
@@ -215,6 +160,23 @@ export default function SettingsScreen() {
         </Text>
       </ScrollView>
     </SafeAreaView>
+  );
+}
+
+function SettingRow({
+  label,
+  value,
+  onPress,
+}: {
+  label: string;
+  value: string;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable style={styles.row} onPress={onPress}>
+      <Text style={styles.rowLabel}>{label}</Text>
+      <Text style={styles.rowValue}>{value} ›</Text>
+    </Pressable>
   );
 }
 
@@ -298,7 +260,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
   },
-  success: {
+  message: {
     color: '#9DE6B4',
     textAlign: 'center',
     fontSize: 14,
