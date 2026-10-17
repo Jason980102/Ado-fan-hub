@@ -1,4 +1,5 @@
-﻿import {
+import '@/localization/analytics-i18n';
+import {
   Tabs,
   TabList,
   TabTrigger,
@@ -24,6 +25,12 @@ export default function AppTabs() {
           </TabTrigger>
           <TabTrigger name="news" href="/news" asChild>
             <TabButton>{t('news')}</TabButton>
+          </TabTrigger>
+          <TabTrigger name="analytics" href="/analytics" asChild>
+            <TabButton>{t('analytics:tab')}</TabButton>
+          </TabTrigger>
+          <TabTrigger name="mv" href="/mv" asChild>
+            <TabButton>MV</TabButton>
           </TabTrigger>
           <TabTrigger name="following" href="/following" asChild>
             <TabButton>{t('following')}</TabButton>
@@ -119,4 +126,3 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 });
-
