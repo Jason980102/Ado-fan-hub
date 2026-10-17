@@ -1,4 +1,4 @@
-﻿export type NewsCategory = 'official' | 'concert' | 'merch' | 'media';
+export type NewsCategory = 'official' | 'concert' | 'merch' | 'media';
 
 export type NewsItem = {
   id: string;
@@ -21,14 +21,15 @@ const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
 export async function getNews(
   limit = 10,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  offset = 0
 ): Promise<NewsListResponse> {
   if (!API_URL) {
     throw new Error('EXPO_PUBLIC_API_URL is not configured');
   }
 
   const response = await fetch(
-    `${API_URL}/api/news?limit=${limit}`,
+    `${API_URL}/api/news?limit=${limit}&offset=${offset}`,
     {
       method: 'GET',
       headers: {
@@ -44,7 +45,7 @@ export async function getNews(
 
   const data: NewsListResponse = await response.json();
 
-  if (!Array.isArray(data.items) || typeof data.total !== 'number') {
+  if (!Array.isArray(data.items) || !Number.isSafeInteger(data.total) || data.total < 0) {
     throw new Error('Invalid News API response');
   }
 

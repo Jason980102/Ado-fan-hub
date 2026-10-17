@@ -8,3 +8,6 @@ __pycache__/
 !.env.example
 
 /research/
+# Local analytics database
+/data/
+/analytics.local.json

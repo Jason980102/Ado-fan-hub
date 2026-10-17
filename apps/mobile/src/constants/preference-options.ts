@@ -1,4 +1,4 @@
-﻿import type { SelectionOption } from '@/components/selection-modal';
+import type { SelectionOption } from '@/components/selection-modal';
 
 export const languageOptions: SelectionOption[] = [
   { value: 'en', label: 'English' },

@@ -1,211 +1,122 @@
-﻿import { Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { HeroGeometry, MotionShortcut } from '@/components/home-motion';
+import { useState } from 'react';
+import { ActivityIndicator, Image, Linking, Platform, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-
-const COLORS = {
-  background: '#0B0B12',
-  surface: '#191923',
-  surfaceAlt: '#242033',
-  accent: '#B59AFF',
-  white: '#FFFFFF',
-  muted: '#A9A6B6',
-};
-
+import RoseScrollView from '@/components/rose-scroll-view';
+import ExploreIcon from '@/components/explore-icon';
+import { FanColors as C } from '@/constants/fan-theme';
+import { useWebLayout } from '@/hooks/use-web-layout';
+import { useNewsFeed } from '@/hooks/use-news-feed';
+import { usePreferences } from '@/contexts/preferences-context';
+import { hubCopy } from '@/localization/hub-copy';
 
 export default function HomeScreen() {
-  const { t } = useTranslation();
-
-  const sections = [
-    { icon: '📰', title: t('homeNewsTitle'), description: t('homeNewsDescription') },
-    { icon: '🎤', title: t('homeConcertsTitle'), description: t('homeConcertsDescription') },
-    { icon: '🛍️', title: t('homeMerchTitle'), description: t('homeMerchDescription') },
-    { icon: '💜', title: t('homeCommunityTitle'), description: t('homeCommunityDescription') },
-  ];
-  return (
-    <View style={styles.container}>
-      <SafeAreaView style={styles.safeArea} edges={['top']}>
-        <ScrollView
-          contentContainerStyle={styles.content}
-          showsVerticalScrollIndicator={false}
-        >
-          <View style={styles.header}>
-            <View>
-              <Text style={styles.eyebrow}>{t('homeEyebrow')}</Text>
-              <Text style={styles.title}>Ado Fan Hub</Text>
-            </View>
-
-            <View style={styles.headerIcon}>
-              <Text style={styles.headerIconText}>♪</Text>
-            </View>
-          </View>
-
-          <View style={styles.hero}>
-            <Text style={styles.heroLabel}>{t('homeWelcome')}</Text>
-            <Text style={styles.heroTitle}>
-              {t('homeHeroTitle')}
-            </Text>
-            <Text style={styles.heroDescription}>
-              {t('homeHeroDescription')}
-            </Text>
-          </View>
-
-          <Text style={styles.sectionHeading}>{t('homeExplore')}</Text>
-
-          <View style={styles.grid}>
-            {sections.map((item) => (
-              <View key={item.title} style={styles.card}>
-                <Text style={styles.cardIcon}>{item.icon}</Text>
-                <Text style={styles.cardTitle}>{item.title}</Text>
-                <Text style={styles.cardDescription}>
-                  {item.description}
-                </Text>
-              </View>
+  const { i18n } = useTranslation();
+  const w = hubCopy(i18n.resolvedLanguage || i18n.language);
+  const router = useRouter();
+  const layout = useWebLayout();
+  const { preferences } = usePreferences();
+  const feed = useNewsFeed();
+  const [gridWidth, setGridWidth] = useState(0);
+  const [heroSize, setHeroSize] = useState({ width: 0, height: 0 });
+  const [linkError, setLinkError] = useState(false);
+  const columns = Platform.OS === 'web' ? (gridWidth >= 960 ? 4 : gridWidth >= 280 ? 2 : 1) : 2;
+  const shortcuts = [
+    { title: w.news, note: w.newsNote, icon: 'video', route: '/news' },
+    { title: 'MV', note: w.mvNote, icon: 'music', route: '/mv' },
+    { title: w.analytics, note: w.analyticsNote, icon: 'chart', route: '/analytics' },
+    { title: w.official, note: w.officialNote, icon: 'shop', route: '/explore' },
+  ] as const;
+  function date(value: string) {
+    if (!Number.isFinite(Date.parse(value))) return '';
+    return new Intl.DateTimeFormat(i18n.language, { month: 'short', day: 'numeric', timeZone: preferences.timeZone }).format(new Date(value));
+  }
+  async function open(url: string) {
+    setLinkError(false);
+    try {
+      if (!/^https:\/\//i.test(url)) throw new Error('Invalid URL');
+      await Linking.openURL(url);
+    } catch { setLinkError(true); }
+  }
+  return <SafeAreaView style={s.screen} edges={Platform.OS === 'web' ? ['top'] : ['top', 'left', 'right']}>
+    <RoseScrollView contentContainerStyle={[s.content, layout.contentStyle, Platform.OS === 'web' && { maxWidth: 1120 }]}
+      showsVerticalScrollIndicator={false}
+      refreshControl={Platform.OS !== 'web' ? <RefreshControl refreshing={feed.refreshing} onRefresh={() => void feed.loadNews(true)} tintColor={C.accent} colors={[C.accent]} /> : undefined}>
+      <View style={s.brandCopy}>
+        <Text style={s.eyebrow}>{w.eyebrow}</Text>
+        <View style={s.brand}>
+          <Image source={require('../../assets/images/blue-rose-icon.png')} resizeMode="contain" style={s.rose} accessible={false} />
+          <Text style={[s.title, { flex: 1 }]}>Ado Fan Hub</Text>
+        </View>
+      </View>
+      <View style={[s.hero, layout.wide && s.heroWide]}
+        onLayout={Platform.OS !== 'web' ? event => {
+          const { width, height } = event.nativeEvent.layout;
+          setHeroSize(previous => previous.width === width && previous.height === height ? previous : { width, height });
+        } : undefined}>
+        <Image source={require('../../assets/images/tokyo-night-banner.png')}
+          resizeMode="cover"
+          style={Platform.OS === 'web'
+            ? [StyleSheet.absoluteFill, { width: '100%', height: '100%' }]
+            : { position: 'absolute', top: 0, left: 0, width: heroSize.width, height: heroSize.height }}
+          accessible={false} />
+        <View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(3,9,22,0.58)' }]} />
+        <HeroGeometry />
+        <View style={[s.heroCopy, layout.wide && { flex: 1 }]}><Text style={[s.eyebrow, s.heroEyebrow]}>Discover Ado</Text><Text style={s.heroTitle}>{w.hero}</Text><Text style={[s.body, s.heroBody]}>{w.intro}</Text></View>
+        <View style={s.actions}>
+          <Pressable accessibilityRole="button" onPress={() => router.push('/about')} style={({ pressed }) => [s.primary, pressed && s.pressed]}><Text style={s.primaryText}>{w.about} →</Text></Pressable>
+          <Pressable accessibilityRole="button" onPress={() => router.push('/mv')} style={({ pressed }) => [s.secondary, pressed && s.pressed]}><Text style={s.link}>{w.listen} →</Text></Pressable>
+        </View>
+      </View>
+      <Text style={s.heading}>{w.shortcuts}</Text>
+      <View style={s.grid} onLayout={e => setGridWidth(e.nativeEvent.layout.width)}>
+        {Array.from({ length: Math.ceil(shortcuts.length / columns) }, (_, row) => (
+          <View key={row} style={s.shortcutRow}>
+            {shortcuts.slice(row * columns, (row + 1) * columns).map((item, column) => (
+              <MotionShortcut key={item.route} index={row * columns + column}
+                onPress={() => router.push(item.route)} style={s.shortcut}>
+                <ExploreIcon name={item.icon} /><Text style={s.cardTitle}>{item.title}</Text><Text style={s.small}>{item.note}</Text>
+              </MotionShortcut>
             ))}
           </View>
-
-          <View style={styles.notice}>
-            <Text style={styles.noticeTitle}>🚧 {t('homeDevelopmentTitle')}</Text>
-            <Text style={styles.noticeText}>
-              {t('homeDevelopmentText')}
-            </Text>
-          </View>
-
-          <Text style={styles.footer}>
-            {t('homeFooter')}
-          </Text>
-        </ScrollView>
-      </SafeAreaView>
-    </View>
-  );
+        ))}
+      </View>
+      <View style={s.sectionHeader}><Text style={s.heading}>{w.news}</Text><Pressable accessibilityRole="button" onPress={() => router.push('/news')} style={s.textButton}><Text style={s.link}>{w.all} →</Text></Pressable></View>
+      {Platform.OS === 'web' && <Pressable disabled={feed.loading || feed.refreshing} accessibilityRole="button" onPress={() => void feed.loadNews(true)} style={s.refresh}><Text style={s.link}>{w.refresh}</Text></Pressable>}
+      {feed.loading && <ActivityIndicator color={C.accent} />}
+      {feed.error && <View style={s.newsCard}><Text accessibilityRole="alert" style={s.body}>{w.error}</Text><Pressable accessibilityRole="button" onPress={() => void feed.loadNews()} style={s.textButton}><Text style={s.link}>{w.retry}</Text></Pressable></View>}
+      {!feed.loading && !feed.error && feed.items.length === 0 && <Text style={s.body}>{w.empty}</Text>}
+      {feed.items.slice(0, 3).map(item => <Pressable accessibilityRole="link" key={item.id} onPress={() => void open(item.source_url)} style={({ pressed }) => [s.newsCard, pressed && s.pressed]}>
+        <View style={s.newsRow}>
+          <View style={s.newsCopy}><Text style={s.newsMeta}>{date(item.published_at)} · {item.source_name}</Text><Text style={s.newsTitle} numberOfLines={3}>{item.title}</Text><Text style={s.link}>↗ {item.source_name}</Text></View>
+          {item.image_url && /^https:\/\//i.test(item.image_url) && !feed.failedImages.includes(item.id) && <Image source={{ uri: item.image_url }} resizeMode="cover" style={s.thumbnail} onError={() => feed.setFailedImages(ids => [...ids, item.id])} />}
+        </View>
+      </Pressable>)}
+      {linkError && <Text accessibilityRole="alert" style={s.body}>{w.linkError}</Text>}
+      <Pressable accessibilityRole="button" onPress={() => router.push('/about')} style={({ pressed }) => [s.aboutCard, pressed && s.pressed]}>
+        <Text style={s.eyebrow}>BEHIND THE MUSIC</Text><Text style={s.heading}>{w.about} →</Text><Text style={s.body}>{w.aboutNote}</Text>
+      </Pressable>
+      <Text style={s.footer}>{w.footer}</Text>
+    </RoseScrollView>
+  </SafeAreaView>;
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-  safeArea: {
-    flex: 1,
-  },
-  content: {
-    width: '100%',
-    maxWidth: 850,
-    alignSelf: 'center',
-    paddingHorizontal: 20,
-    paddingTop: Platform.OS === 'web' ? 100 : 24,
-    paddingBottom: 110,
-    gap: 24,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  eyebrow: {
-    color: COLORS.accent,
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 2,
-  },
-  title: {
-    color: COLORS.white,
-    fontSize: 30,
-    fontWeight: '800',
-    marginTop: 6,
-  },
-  headerIcon: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-    backgroundColor: COLORS.surfaceAlt,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  headerIconText: {
-    color: COLORS.accent,
-    fontSize: 26,
-  },
-  hero: {
-    backgroundColor: COLORS.surfaceAlt,
-    borderRadius: 24,
-    padding: 25,
-    gap: 12,
-    minHeight: 190,
-    justifyContent: 'center',
-  },
-  heroLabel: {
-    color: COLORS.accent,
-    fontSize: 12,
-    fontWeight: '800',
-    letterSpacing: 1.5,
-  },
-  heroTitle: {
-    color: COLORS.white,
-    fontSize: 26,
-    fontWeight: '800',
-    lineHeight: 34,
-  },
-  heroDescription: {
-    color: '#CCC5DB',
-    fontSize: 14,
-    lineHeight: 22,
-  },
-  sectionHeading: {
-    color: COLORS.white,
-    fontSize: 22,
-    fontWeight: '800',
-  },
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    gap: 12,
-  },
-  card: {
-    width: '48%',
-    minHeight: 155,
-    backgroundColor: COLORS.surface,
-    borderRadius: 20,
-    padding: 17,
-    gap: 10,
-  },
-  cardIcon: {
-    fontSize: 27,
-  },
-  cardTitle: {
-    color: COLORS.white,
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  cardDescription: {
-    color: COLORS.muted,
-    fontSize: 12,
-    lineHeight: 18,
-  },
-  notice: {
-    backgroundColor: COLORS.surface,
-    borderRadius: 18,
-    padding: 20,
-    gap: 10,
-    borderWidth: 1,
-    borderColor: '#302A42',
-  },
-  noticeTitle: {
-    color: COLORS.accent,
-    fontSize: 15,
-    fontWeight: '700',
-  },
-  noticeText: {
-    color: COLORS.muted,
-    fontSize: 13,
-    lineHeight: 21,
-  },
-  footer: {
-    color: '#777386',
-    fontSize: 11,
-    textAlign: 'center',
-  },
+const s = StyleSheet.create({
+  heroEyebrow: { color: '#b9d7ff', letterSpacing: 0.8 },
+  heroBody: { color: '#e0e9f7' },
+  screen: { flex: 1, backgroundColor: C.background }, content: { width: '100%', maxWidth: 850, alignSelf: 'center', paddingHorizontal: 20, paddingTop: Platform.OS === 'web' ? 110 : 24, paddingBottom: 110, gap: 18 },
+  brand: { flexDirection: 'row', alignItems: 'center', gap: 12 }, brandCopy: { gap: 10 }, rose: { width: 44, height: 44 },
+  title: { color: C.text, fontSize: 30, fontWeight: '800' }, eyebrow: { color: C.accent, fontWeight: '700', fontSize: 11, letterSpacing: 1.6 },
+  hero: { padding: 24, paddingVertical: 36, minHeight: 290, backgroundColor: C.surfaceAlt, borderRadius: 24, gap: 24, overflow: 'hidden', justifyContent: 'center' }, heroWide: { flexDirection: 'row', alignItems: 'center', gap: 32, minHeight: 320, padding: 36 }, heroCopy: { gap: 12 },
+  heroTitle: { color: C.text, fontSize: 28, lineHeight: 37, fontWeight: '800' }, body: { color: C.muted, fontSize: 14, lineHeight: 23 },
+  actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 }, primary: { paddingHorizontal: 18, paddingVertical: 14, backgroundColor: C.accent, borderRadius: 12 }, primaryText: { color: C.background, fontSize: 14, fontWeight: '700' },
+  secondary: { paddingHorizontal: 18, paddingVertical: 14, backgroundColor: C.surface, borderRadius: 12 }, link: { color: C.accent, fontSize: 13, fontWeight: '600' },
+  heading: { color: C.text, fontSize: 21, fontWeight: '700' }, grid: { gap: 12 },
+  shortcutRow: { flexDirection: 'row', gap: 12, alignItems: 'stretch' },
+  shortcutCell: { flex: 1, minWidth: 0 },
+  shortcut: { padding: 18, gap: 10, minHeight: 148, borderRadius: 20, backgroundColor: C.surface }, cardTitle: { color: C.text, fontSize: 17, fontWeight: '700' }, small: { color: C.muted, fontSize: 12, lineHeight: 19 },
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }, textButton: { paddingVertical: 12, paddingHorizontal: 4, alignSelf: 'flex-start' }, refresh: { alignSelf: 'flex-end', padding: 12, borderRadius: 12, backgroundColor: C.surfaceAlt },
+  newsCard: { borderRadius: 20, backgroundColor: C.surface, padding: 20, gap: 8 }, newsRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 14 }, newsCopy: { flex: 1, minWidth: 0, gap: 10 }, newsMeta: { color: C.muted, fontSize: 11, lineHeight: 17 }, newsTitle: { color: C.text, fontWeight: '600', fontSize: 16, lineHeight: 24 }, thumbnail: { width: 64, height: 64, borderRadius: 12 },
+  aboutCard: { backgroundColor: C.surfaceAlt, borderRadius: 22, padding: 24, gap: 12 }, footer: { color: C.subtle, fontSize: 11, lineHeight: 18, textAlign: 'center', marginTop: 8 }, pressed: { opacity: 0.75 },
 });
-
-
-

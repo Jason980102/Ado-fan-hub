@@ -1,4 +1,5 @@
-﻿import { useState } from 'react';
+import { FanColors } from '@/constants/fan-theme';
+import { useState } from 'react';
 import {
   FlatList,
   Modal,
@@ -64,7 +65,7 @@ export default function SelectionModal({
           <TextInput
             style={styles.input}
             placeholder="Search / 搜尋 / 検索"
-            placeholderTextColor="#8E899E"
+            placeholderTextColor={FanColors.subtle}
             value={query}
             onChangeText={setQuery}
             autoCorrect={false}
@@ -112,7 +113,7 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   panel: {
-    backgroundColor: '#191923',
+    backgroundColor: FanColors.surface,
     borderRadius: 22,
     padding: 20,
     height: '70%',
@@ -128,20 +129,20 @@ const styles = StyleSheet.create({
     marginBottom: 18,
   },
   title: {
-    color: '#FFFFFF',
+    color: FanColors.text,
     fontSize: 21,
     fontWeight: '700',
     flexShrink: 1,
   },
   close: {
-    color: '#B59AFF',
+    color: FanColors.accent,
     fontSize: 24,
     paddingHorizontal: 8,
   },
   input: {
-    backgroundColor: '#292635',
+    backgroundColor: FanColors.surfaceAlt,
     borderRadius: 12,
-    color: '#FFFFFF',
+    color: FanColors.text,
     fontSize: 15,
     padding: 14,
     marginBottom: 12,
@@ -156,27 +157,27 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   selected: {
-    backgroundColor: '#342A49',
+    backgroundColor: FanColors.selected,
   },
   optionText: {
     flexShrink: 1,
   },
   optionLabel: {
-    color: '#FFFFFF',
+    color: FanColors.text,
     fontSize: 16,
   },
   optionDetail: {
-    color: '#AAA6BC',
+    color: FanColors.muted,
     fontSize: 11,
     marginTop: 4,
   },
   check: {
-    color: '#B59AFF',
+    color: FanColors.accent,
     fontSize: 20,
     marginLeft: 10,
   },
   empty: {
-    color: '#AAA6BC',
+    color: FanColors.muted,
     textAlign: 'center',
     padding: 24,
   },

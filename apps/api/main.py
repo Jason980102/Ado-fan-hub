@@ -1,4 +1,7 @@
-﻿from typing import Annotated
+from analytics_growth import router as analytics_growth_router
+from official_images import router as official_images_router
+from analytics import router as analytics_router
+from typing import Annotated
 
 from fastapi import FastAPI, HTTPException, Query
 
@@ -57,3 +60,7 @@ def list_news(
             status_code=503,
             detail="News source temporarily unavailable",
         ) from None
+
+app.include_router(analytics_router)
+app.include_router(analytics_growth_router)
+app.include_router(official_images_router)
