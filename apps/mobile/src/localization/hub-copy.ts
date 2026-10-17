@@ -14,7 +14,7 @@ const copy = {
     footer: '非官方粉絲專案，與 Ado 官方無隸屬關係。',
   },
   en: {
-    eyebrow: 'YOUR ADO COMPANION', hero: 'One song. A whole world to discover.',
+    eyebrow: 'Your Ado companion', hero: 'One song. A whole world to discover.',
     intro: 'Get to know Ado, explore originals and covers, and catch up on official news.',
     about: 'Meet Ado', aboutNote: 'Biography, profile and music milestones', listen: 'Explore MVs',
     news: 'Latest news', newsNote: 'Official announcements and updates', all: 'View all',

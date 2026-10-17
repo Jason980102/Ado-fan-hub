@@ -1,3 +1,4 @@
+import { HeroGeometry, MotionShortcut } from '@/components/home-motion';
 import { useState } from 'react';
 import { ActivityIndicator, Image, Linking, Platform, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -19,6 +20,7 @@ export default function HomeScreen() {
   const { preferences } = usePreferences();
   const feed = useNewsFeed();
   const [gridWidth, setGridWidth] = useState(0);
+  const [heroSize, setHeroSize] = useState({ width: 0, height: 0 });
   const [linkError, setLinkError] = useState(false);
   const columns = Platform.OS === 'web' ? (gridWidth >= 960 ? 4 : gridWidth >= 280 ? 2 : 1) : 2;
   const shortcuts = [
@@ -42,12 +44,27 @@ export default function HomeScreen() {
     <RoseScrollView contentContainerStyle={[s.content, layout.contentStyle, Platform.OS === 'web' && { maxWidth: 1120 }]}
       showsVerticalScrollIndicator={false}
       refreshControl={Platform.OS !== 'web' ? <RefreshControl refreshing={feed.refreshing} onRefresh={() => void feed.loadNews(true)} tintColor={C.accent} colors={[C.accent]} /> : undefined}>
-      <View style={s.brand}>
-        <View style={s.brandCopy}><Text style={s.eyebrow}>{w.eyebrow}</Text><Text style={s.title}>Ado Fan Hub</Text></View>
-        <Image source={require('../../assets/images/blue-rose-icon.png')} resizeMode="contain" style={s.rose} accessible={false} />
+      <View style={s.brandCopy}>
+        <Text style={s.eyebrow}>{w.eyebrow}</Text>
+        <View style={s.brand}>
+          <Image source={require('../../assets/images/blue-rose-icon.png')} resizeMode="contain" style={s.rose} accessible={false} />
+          <Text style={[s.title, { flex: 1 }]}>Ado Fan Hub</Text>
+        </View>
       </View>
-      <View style={[s.hero, layout.wide && s.heroWide]}>
-        <View style={[s.heroCopy, layout.wide && { flex: 1 }]}><Text style={s.eyebrow}>DISCOVER ADO</Text><Text style={s.heroTitle}>{w.hero}</Text><Text style={s.body}>{w.intro}</Text></View>
+      <View style={[s.hero, layout.wide && s.heroWide]}
+        onLayout={Platform.OS !== 'web' ? event => {
+          const { width, height } = event.nativeEvent.layout;
+          setHeroSize(previous => previous.width === width && previous.height === height ? previous : { width, height });
+        } : undefined}>
+        <Image source={require('../../assets/images/tokyo-night-banner.png')}
+          resizeMode="cover"
+          style={Platform.OS === 'web'
+            ? [StyleSheet.absoluteFill, { width: '100%', height: '100%' }]
+            : { position: 'absolute', top: 0, left: 0, width: heroSize.width, height: heroSize.height }}
+          accessible={false} />
+        <View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(3,9,22,0.58)' }]} />
+        <HeroGeometry />
+        <View style={[s.heroCopy, layout.wide && { flex: 1 }]}><Text style={[s.eyebrow, s.heroEyebrow]}>Discover Ado</Text><Text style={s.heroTitle}>{w.hero}</Text><Text style={[s.body, s.heroBody]}>{w.intro}</Text></View>
         <View style={s.actions}>
           <Pressable accessibilityRole="button" onPress={() => router.push('/about')} style={({ pressed }) => [s.primary, pressed && s.pressed]}><Text style={s.primaryText}>{w.about} →</Text></Pressable>
           <Pressable accessibilityRole="button" onPress={() => router.push('/mv')} style={({ pressed }) => [s.secondary, pressed && s.pressed]}><Text style={s.link}>{w.listen} →</Text></Pressable>
@@ -57,11 +74,11 @@ export default function HomeScreen() {
       <View style={s.grid} onLayout={e => setGridWidth(e.nativeEvent.layout.width)}>
         {Array.from({ length: Math.ceil(shortcuts.length / columns) }, (_, row) => (
           <View key={row} style={s.shortcutRow}>
-            {shortcuts.slice(row * columns, (row + 1) * columns).map(item => (
-              <Pressable key={item.route} accessibilityRole="button" onPress={() => router.push(item.route)}
-                style={({ pressed }) => [s.shortcut, s.shortcutCell, pressed && s.pressed]}>
+            {shortcuts.slice(row * columns, (row + 1) * columns).map((item, column) => (
+              <MotionShortcut key={item.route} index={row * columns + column}
+                onPress={() => router.push(item.route)} style={s.shortcut}>
                 <ExploreIcon name={item.icon} /><Text style={s.cardTitle}>{item.title}</Text><Text style={s.small}>{item.note}</Text>
-              </Pressable>
+              </MotionShortcut>
             ))}
           </View>
         ))}
@@ -86,10 +103,12 @@ export default function HomeScreen() {
   </SafeAreaView>;
 }
 const s = StyleSheet.create({
+  heroEyebrow: { color: '#b9d7ff', letterSpacing: 0.8 },
+  heroBody: { color: '#e0e9f7' },
   screen: { flex: 1, backgroundColor: C.background }, content: { width: '100%', maxWidth: 850, alignSelf: 'center', paddingHorizontal: 20, paddingTop: Platform.OS === 'web' ? 110 : 24, paddingBottom: 110, gap: 18 },
-  brand: { flexDirection: 'row', alignItems: 'center', gap: 12 }, brandCopy: { flex: 1, gap: 10 }, rose: { width: 72, height: 72 },
+  brand: { flexDirection: 'row', alignItems: 'center', gap: 12 }, brandCopy: { gap: 10 }, rose: { width: 44, height: 44 },
   title: { color: C.text, fontSize: 30, fontWeight: '800' }, eyebrow: { color: C.accent, fontWeight: '700', fontSize: 11, letterSpacing: 1.6 },
-  hero: { padding: 24, backgroundColor: C.surfaceAlt, borderRadius: 24, gap: 24 }, heroWide: { flexDirection: 'row', alignItems: 'center', gap: 32 }, heroCopy: { gap: 12 },
+  hero: { padding: 24, paddingVertical: 36, minHeight: 290, backgroundColor: C.surfaceAlt, borderRadius: 24, gap: 24, overflow: 'hidden', justifyContent: 'center' }, heroWide: { flexDirection: 'row', alignItems: 'center', gap: 32, minHeight: 320, padding: 36 }, heroCopy: { gap: 12 },
   heroTitle: { color: C.text, fontSize: 28, lineHeight: 37, fontWeight: '800' }, body: { color: C.muted, fontSize: 14, lineHeight: 23 },
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 }, primary: { paddingHorizontal: 18, paddingVertical: 14, backgroundColor: C.accent, borderRadius: 12 }, primaryText: { color: C.background, fontSize: 14, fontWeight: '700' },
   secondary: { paddingHorizontal: 18, paddingVertical: 14, backgroundColor: C.surface, borderRadius: 12 }, link: { color: C.accent, fontSize: 13, fontWeight: '600' },
