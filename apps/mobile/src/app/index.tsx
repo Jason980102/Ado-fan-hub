@@ -1,19 +1,23 @@
-﻿import { Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import MobileRoseFrame from '@/components/mobile-rose-frame';
+import { FanColors } from '@/constants/fan-theme';
+import { useWebLayout } from '@/hooks/use-web-layout';
+import { Image, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 
 const COLORS = {
-  background: '#0B0B12',
-  surface: '#191923',
-  surfaceAlt: '#242033',
-  accent: '#B59AFF',
-  white: '#FFFFFF',
-  muted: '#A9A6B6',
+  background: FanColors.background,
+  surface: FanColors.surface,
+  surfaceAlt: FanColors.surfaceAlt,
+  accent: FanColors.accent,
+  white: FanColors.text,
+  muted: FanColors.muted,
 };
 
 
 export default function HomeScreen() {
-  const { t } = useTranslation();
+  const webLayout = useWebLayout();
+  const { t, i18n } = useTranslation();
 
   const sections = [
     { icon: '📰', title: t('homeNewsTitle'), description: t('homeNewsDescription') },
@@ -25,25 +29,45 @@ export default function HomeScreen() {
     <View style={styles.container}>
       <SafeAreaView style={styles.safeArea} edges={['top']}>
         <ScrollView
-          contentContainerStyle={styles.content}
+          contentContainerStyle={[styles.content, webLayout.contentStyle]}
           showsVerticalScrollIndicator={false}
         >
-          <View style={styles.header}>
-            <View>
-              <Text style={styles.eyebrow}>{t('homeEyebrow')}</Text>
-              <Text style={styles.title}>Ado Fan Hub</Text>
-            </View>
-
-            <View style={styles.headerIcon}>
-              <Text style={styles.headerIconText}>♪</Text>
+          <MobileRoseFrame />
+          <View style={{ gap: 12 }}>
+            <Text style={styles.eyebrow}>{t('homeEyebrow')}</Text>
+            <View style={{
+              flexDirection: 'row', alignItems: 'center', gap: 16,
+            }}>
+              <Text style={[styles.title, {
+                flex: 1, minWidth: 0, marginTop: 0,
+              }]}>Ado Fan Hub</Text>
+              <View style={{
+                width: webLayout.wide ? 100 : 80,
+                height: webLayout.wide ? 100 : 80,
+                flexShrink: 0,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}>
+                <Image
+                  source={require('../../assets/images/blue-rose-icon.png')}
+                  resizeMode="contain"
+                  style={{
+                    width: webLayout.wide ? 92 : 74,
+                    height: webLayout.wide ? 92 : 74,
+                  }}
+                  accessibilityLabel={
+                    i18n.language.startsWith('zh') ? '原創藍玫瑰'
+                      : i18n.language.startsWith('ja') ? '青いバラの作品'
+                      : 'Original blue rose artwork'
+                  }
+                />
+              </View>
             </View>
           </View>
 
           <View style={styles.hero}>
             <Text style={styles.heroLabel}>{t('homeWelcome')}</Text>
-            <Text style={styles.heroTitle}>
-              {t('homeHeroTitle')}
-            </Text>
+            <Text style={styles.heroTitle}>{t('homeHeroTitle')}</Text>
             <Text style={styles.heroDescription}>
               {t('homeHeroDescription')}
             </Text>
@@ -133,6 +157,13 @@ const styles = StyleSheet.create({
     minHeight: 190,
     justifyContent: 'center',
   },
+  heroWide: { flexDirection: 'row', alignItems: 'center', gap: 32 },
+  heroCopy: { flex: 1, width: '100%', minWidth: 0, gap: 12 },
+  roseArt: {
+    width: '100%', maxWidth: 300, height: 190,
+    alignSelf: 'center', borderRadius: 18,
+  },
+  roseArtWide: { width: 280, height: 210 },
   heroLabel: {
     color: COLORS.accent,
     fontSize: 12,
@@ -146,7 +177,7 @@ const styles = StyleSheet.create({
     lineHeight: 34,
   },
   heroDescription: {
-    color: '#CCC5DB',
+    color: FanColors.muted,
     fontSize: 14,
     lineHeight: 22,
   },
@@ -188,7 +219,7 @@ const styles = StyleSheet.create({
     padding: 20,
     gap: 10,
     borderWidth: 1,
-    borderColor: '#302A42',
+    borderColor: FanColors.border,
   },
   noticeTitle: {
     color: COLORS.accent,
@@ -201,11 +232,8 @@ const styles = StyleSheet.create({
     lineHeight: 21,
   },
   footer: {
-    color: '#777386',
+    color: FanColors.subtle,
     fontSize: 11,
     textAlign: 'center',
   },
 });
-
-
-

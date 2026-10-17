@@ -1,4 +1,5 @@
-﻿import { Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { FanColors } from '@/constants/fan-theme';
+import { Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 
@@ -45,7 +46,7 @@ export default function PlaceholderScreen({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0B0B12',
+    backgroundColor: FanColors.background,
   },
   content: {
     width: '100%',
@@ -57,23 +58,23 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   eyebrow: {
-    color: '#B59AFF',
+    color: FanColors.accent,
     fontSize: 12,
     fontWeight: '700',
     letterSpacing: 2,
   },
   title: {
-    color: '#FFFFFF',
+    color: FanColors.text,
     fontSize: 34,
     fontWeight: '800',
   },
   subtitle: {
-    color: '#AAA6BC',
+    color: FanColors.muted,
     fontSize: 15,
     lineHeight: 24,
   },
   card: {
-    backgroundColor: '#191923',
+    backgroundColor: FanColors.surface,
     borderRadius: 22,
     padding: 24,
     paddingTop: Platform.OS === 'web' ? 115 : 24,
@@ -81,25 +82,23 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   cardTitle: {
-    color: '#B59AFF',
+    color: FanColors.accent,
     fontSize: 20,
     fontWeight: '700',
   },
   description: {
-    color: '#FFFFFF',
+    color: FanColors.text,
     fontSize: 14,
   },
   feature: {
-    color: '#C8C4D6',
+    color: FanColors.muted,
     fontSize: 14,
     lineHeight: 23,
   },
   footer: {
-    color: '#777386',
+    color: FanColors.subtle,
     textAlign: 'center',
     fontSize: 11,
     marginTop: 20,
   },
 });
-
-

@@ -1,3 +1,5 @@
+import { FanColors } from '@/constants/fan-theme';
+import { useWebLayout } from '@/hooks/use-web-layout';
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator, Linking, Platform, Pressable,
@@ -11,6 +13,7 @@ import MvCatalog from '@/components/mv-catalog';
 import { getAnalytics, type AnalyticsResponse } from '@/services/analytics-api';
 
 export default function MvScreen() {
+  const webLayout = useWebLayout();
   const { t, i18n } = useTranslation('analytics');
   const [data, setData] = useState<AnalyticsResponse | null>(null);
   const [busy, setBusy] = useState(true);
@@ -63,13 +66,13 @@ export default function MvScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <ScrollView contentContainerStyle={styles.content}
+    <SafeAreaView style={styles.container} edges={Platform.OS === 'web' ? ['top'] : ['left', 'right']}>
+      <ScrollView contentContainerStyle={[styles.content, webLayout.contentStyle]}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
         refreshControl={
           <RefreshControl refreshing={busy && data !== null}
-            onRefresh={refresh} tintColor="#B59AFF" colors={['#B59AFF']} />
+            onRefresh={refresh} tintColor={FanColors.accent} colors={[FanColors.accent]} />
         }>
         <Text style={styles.accent}>ADO FAN HUB</Text>
         <Text style={styles.title}>MV</Text>
@@ -79,7 +82,7 @@ export default function MvScreen() {
           <Text style={styles.accent}>{busy ? t('loading') : t('refresh')}</Text>
         </Pressable>
 )}
-        {busy && !data && <ActivityIndicator color="#B59AFF" size="large" />}
+        {busy && !data && <ActivityIndicator color={FanColors.accent} size="large" />}
         {error && <Text accessibilityRole="alert" style={styles.muted}>{t('error')}</Text>}
         {linkError && <Text accessibilityRole="alert" style={styles.muted}>{t('linkError')}</Text>}
         {data && (
@@ -99,17 +102,17 @@ export default function MvScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0B0B12' },
+  container: { flex: 1, backgroundColor: FanColors.background },
   content: {
-    width: '100%', maxWidth: 850, alignSelf: 'center',
+    width: '100%', maxWidth: Platform.OS === 'web' ? 1280 : 850, alignSelf: 'center',
     padding: 24, paddingTop: Platform.OS === 'web' ? 100 : 24,
     paddingBottom: 110, gap: 16,
   },
-  title: { color: '#FFFFFF', fontSize: 34, fontWeight: '800' },
-  accent: { color: '#C8B4FF', fontWeight: '600' },
-  muted: { color: '#AAA6BC', fontSize: 14, lineHeight: 22 },
+  title: { color: FanColors.text, fontSize: 34, fontWeight: '800' },
+  accent: { color: FanColors.accent, fontWeight: '600' },
+  muted: { color: FanColors.muted, fontSize: 14, lineHeight: 22 },
   button: {
     alignSelf: 'flex-end', padding: 12,
-    borderRadius: 12, backgroundColor: '#292439',
+    borderRadius: 12, backgroundColor: FanColors.surfaceAlt,
   },
 });

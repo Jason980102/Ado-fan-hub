@@ -1,3 +1,5 @@
+import { FanColors } from '@/constants/fan-theme';
+import { useWebLayout } from '@/hooks/use-web-layout';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator, Image, Linking, Platform, Pressable,
@@ -22,6 +24,7 @@ import MvBarChart from '@/components/mv-bar-chart';
 import CollapsibleSection from '@/components/collapsible-section';
 
 export default function AnalyticsScreen() {
+  const webLayout = useWebLayout();
   const { t, i18n } = useTranslation('analytics');
   const { preferences } = usePreferences();
   const [data, setData] = useState<AnalyticsResponse | null>(null);
@@ -163,15 +166,15 @@ export default function AnalyticsScreen() {
     .slice(0, 10);
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={Platform.OS === 'web' ? ['top'] : ['left', 'right']}>
       <ScrollView
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, webLayout.contentStyle]}
         refreshControl={
           <RefreshControl
             refreshing={busy && data !== null}
             onRefresh={refresh}
-            tintColor="#B59AFF"
-            colors={['#B59AFF']}
+            tintColor={FanColors.accent}
+            colors={[FanColors.accent]}
           />
         }
       >
@@ -189,7 +192,7 @@ export default function AnalyticsScreen() {
         </Pressable>
 )}
 
-        {busy && !data && <ActivityIndicator color="#B59AFF" size="large" />}
+        {busy && !data && <ActivityIndicator color={FanColors.accent} size="large" />}
 
         {error && (
           <View style={styles.card}>
@@ -296,7 +299,7 @@ export default function AnalyticsScreen() {
                 ))}
               </View>
               {busy && !history && (
-                <ActivityIndicator color="#B59AFF" />
+                <ActivityIndicator color={FanColors.accent} />
               )}
               <Text style={styles.muted}>{t('historyNote')}</Text>
               <Text style={styles.muted}>{preferences.timeZone}</Text>
@@ -402,27 +405,27 @@ export default function AnalyticsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0B0B12' },
+  container: { flex: 1, backgroundColor: FanColors.background },
   content: {
     width: '100%', maxWidth: 850, alignSelf: 'center',
     padding: 24, paddingTop: Platform.OS === 'web' ? 100 : 24,
     paddingBottom: 110, gap: 16,
   },
-  title: { color: '#FFFFFF', fontSize: 34, fontWeight: '800' },
-  heading: { color: '#FFFFFF', fontSize: 18, fontWeight: '700' },
-  accent: { color: '#C8B4FF', fontWeight: '600' },
-  muted: { color: '#AAA6BC', fontSize: 14, lineHeight: 22 },
+  title: { color: FanColors.text, fontSize: 34, fontWeight: '800' },
+  heading: { color: FanColors.text, fontSize: 18, fontWeight: '700' },
+  accent: { color: FanColors.accent, fontWeight: '600' },
+  muted: { color: FanColors.muted, fontSize: 14, lineHeight: 22 },
   button: {
     alignSelf: 'flex-end', padding: 12,
-    borderRadius: 12, backgroundColor: '#292439',
+    borderRadius: 12, backgroundColor: FanColors.surfaceAlt,
   },
-  card: { backgroundColor: '#191923', borderRadius: 20, padding: 20, gap: 12 },
+  card: { backgroundColor: FanColors.surface, borderRadius: 20, padding: 20, gap: 12 },
   stats: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   stat: { flexGrow: 1, flexBasis: 200 },
-  value: { color: '#FFFFFF', fontSize: 24, fontWeight: '700', flexShrink: 1 },
-  image: { width: '100%', aspectRatio: 16 / 9, borderRadius: 12, backgroundColor: '#292439' },
+  value: { color: FanColors.text, fontSize: 24, fontWeight: '700', flexShrink: 1 },
+  image: { width: '100%', aspectRatio: 16 / 9, borderRadius: 12, backgroundColor: FanColors.surfaceAlt },
   fallback: { alignItems: 'center', justifyContent: 'center' },
-  footer: { color: '#777386', textAlign: 'center', fontSize: 11, marginTop: 20 },
+  footer: { color: FanColors.subtle, textAlign: 'center', fontSize: 11, marginTop: 20 },
   channelHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -432,7 +435,7 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: '#292439',
+    backgroundColor: FanColors.surfaceAlt,
   },
   channelTitle: {
     flex: 1,
@@ -446,12 +449,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderRadius: 12,
-    backgroundColor: '#191923',
+    backgroundColor: FanColors.surface,
     borderWidth: 1,
-    borderColor: '#393345',
+    borderColor: FanColors.border,
   },
   rangeSelected: {
-    backgroundColor: '#302641',
-    borderColor: '#C8B4FF',
+    backgroundColor: FanColors.selected,
+    borderColor: FanColors.accent,
   },
 });

@@ -1,4 +1,5 @@
-﻿import { useEffect, useState } from 'react';
+import { FanColors } from '@/constants/fan-theme';
+import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -74,7 +75,7 @@ export default function SettingsScreen() {
   if (loading) {
     return (
       <View style={styles.loading}>
-        <ActivityIndicator color="#B59AFF" />
+        <ActivityIndicator color={FanColors.accent} />
       </View>
     );
   }
@@ -170,11 +171,11 @@ function SettingRow({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0B0B12',
+    backgroundColor: FanColors.background,
   },
   loading: {
     flex: 1,
-    backgroundColor: '#0B0B12',
+    backgroundColor: FanColors.background,
     justifyContent: 'center',
   },
   content: {
@@ -187,22 +188,22 @@ const styles = StyleSheet.create({
     gap: 18,
   },
   eyebrow: {
-    color: '#B59AFF',
+    color: FanColors.accent,
     fontSize: 12,
     fontWeight: '700',
     letterSpacing: 2,
   },
   title: {
-    color: '#FFFFFF',
+    color: FanColors.text,
     fontSize: 34,
     fontWeight: '800',
   },
   subtitle: {
-    color: '#AAA6BC',
+    color: FanColors.muted,
     fontSize: 15,
   },
   card: {
-    backgroundColor: '#191923',
+    backgroundColor: FanColors.surface,
     borderRadius: 20,
     paddingHorizontal: 18,
     marginTop: 10,
@@ -213,27 +214,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     borderBottomWidth: 1,
-    borderBottomColor: '#33303D',
+    borderBottomColor: FanColors.surfaceAlt,
     gap: 12,
   },
   rowLabel: {
-    color: '#FFFFFF',
+    color: FanColors.text,
     fontSize: 15,
     flexShrink: 1,
   },
   rowValue: {
-    color: '#B59AFF',
+    color: FanColors.accent,
     fontSize: 14,
     textAlign: 'right',
     flexShrink: 1,
   },
   hint: {
-    color: '#AAA6BC',
+    color: FanColors.muted,
     fontSize: 12,
     lineHeight: 20,
   },
   saveButton: {
-    backgroundColor: '#8768D6',
+    backgroundColor: FanColors.primary,
     paddingVertical: 17,
     borderRadius: 15,
     alignItems: 'center',
@@ -243,7 +244,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   saveText: {
-    color: '#FFFFFF',
+    color: FanColors.text,
     fontSize: 16,
     fontWeight: '700',
   },
@@ -253,14 +254,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   footer: {
-    color: '#777386',
+    color: FanColors.subtle,
     textAlign: 'center',
     fontSize: 11,
     marginTop: 20,
   },
 });
-
-
-
-
-

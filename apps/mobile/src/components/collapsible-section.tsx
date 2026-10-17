@@ -1,3 +1,4 @@
+import { FanColors } from '@/constants/fan-theme';
 import { useEffect, useState, type ReactNode } from 'react';
 import {
     AccessibilityInfo,
@@ -128,17 +129,17 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         gap: 16,
         padding: 20,
-        backgroundColor: '#242033',
+        backgroundColor: FanColors.surfaceAlt,
         borderRadius: 16,
         minHeight: 56,
     },
     title: {
-        color: '#FFFFFF',
+        color: FanColors.text,
         fontSize: 18,
         fontWeight: '700',
         flex: 1,
     },
-    arrow: { color: '#C8B4FF', fontSize: 26 },
+    arrow: { color: FanColors.accent, fontSize: 26 },
     content: { gap: 16 },
     pressed: { opacity: 0.75 },
 });

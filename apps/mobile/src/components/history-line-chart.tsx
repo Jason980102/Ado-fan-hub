@@ -1,3 +1,4 @@
+import { FanColors } from '@/constants/fan-theme';
 import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, Line, Path } from 'react-native-svg';
 import { useState } from 'react';
@@ -108,14 +109,14 @@ export default function HistoryLineChart({
                                 x2={plotWidth - 12}
                                 y1={position}
                                 y2={position}
-                                stroke="#393345"
+                                stroke={FanColors.border}
                                 strokeDasharray="4 6"
                             />
                         ))}
                         <Path
                             d={path}
                             fill="none"
-                            stroke="#C8B4FF"
+                            stroke={FanColors.accent}
                             strokeWidth={3}
                             strokeLinecap="round"
                             strokeLinejoin="round"
@@ -126,7 +127,7 @@ export default function HistoryLineChart({
                                 cx={dot.x}
                                 cy={dot.y}
                                 r={4}
-                                fill="#C8B4FF"
+                                fill={FanColors.accent}
                             />
                         ))}
                     </Svg>
@@ -147,15 +148,15 @@ export default function HistoryLineChart({
 
 const styles = StyleSheet.create({
     card: {
-        backgroundColor: '#191923',
+        backgroundColor: FanColors.surface,
         borderRadius: 20,
         padding: 20,
         gap: 8,
     },
-    title: { color: '#FFFFFF', fontSize: 18, fontWeight: '700' },
-    label: { color: '#AAA6BC', fontSize: 14 },
-    axis: { color: '#AAA6BC', fontSize: 12 },
+    title: { color: FanColors.text, fontSize: 18, fontWeight: '700' },
+    label: { color: FanColors.muted, fontSize: 14 },
+    axis: { color: FanColors.muted, fontSize: 12 },
     dates: { flexDirection: 'row', justifyContent: 'space-between', gap: 12 },
-    date: { color: '#AAA6BC', fontSize: 12, flex: 1 },
+    date: { color: FanColors.muted, fontSize: 12, flex: 1 },
     endDate: { textAlign: 'right' },
 });

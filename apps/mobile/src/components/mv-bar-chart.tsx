@@ -1,3 +1,4 @@
+import { FanColors } from '@/constants/fan-theme';
 import {
     AccessibilityInfo,
     Animated,
@@ -138,37 +139,37 @@ export default function MvBarChart({
 
 const styles = StyleSheet.create({
     card: {
-        backgroundColor: '#191923',
+        backgroundColor: FanColors.surface,
         borderRadius: 20,
         padding: 20,
         gap: 20,
     },
-    heading: { color: '#FFFFFF', fontSize: 18, fontWeight: '700' },
-    muted: { color: '#AAA6BC', fontSize: 14 },
+    heading: { color: FanColors.text, fontSize: 18, fontWeight: '700' },
+    muted: { color: FanColors.muted, fontSize: 14 },
     row: { gap: 8, paddingVertical: 4 },
     labels: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
     rank: {
-        color: '#C8B4FF',
+        color: FanColors.accent,
         fontSize: 16,
         fontWeight: '800',
         minWidth: 24,
     },
-    song: { color: '#FFFFFF', fontSize: 15, lineHeight: 22, flex: 1 },
+    song: { color: FanColors.text, fontSize: 15, lineHeight: 22, flex: 1 },
     count: {
-        color: '#C8B4FF',
+        color: FanColors.accent,
         fontSize: 14,
         textAlign: 'right',
         fontVariant: ['tabular-nums'],
     },
     track: {
         height: 16,
-        backgroundColor: '#302A3E',
+        backgroundColor: FanColors.border,
         borderRadius: 8,
         overflow: 'hidden',
     },
     bar: {
         height: '100%',
-        backgroundColor: '#B59AFF',
+        backgroundColor: FanColors.accent,
         borderRadius: 8,
     },
     pressed: { opacity: 0.7 },

@@ -1,4 +1,5 @@
-﻿import { useCallback, useEffect, useState } from 'react';
+import { FanColors } from '@/constants/fan-theme';
+import { useWebLayout } from '@/hooks/use-web-layout';
 import {
   ActivityIndicator,
   Image,
@@ -15,7 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 
 import { usePreferences } from '@/contexts/preferences-context';
-import { getNews, type NewsItem } from '@/services/news-api';
+import { useNewsFeed } from '@/hooks/use-news-feed';
 
 const CATEGORY_KEYS = {
   official: 'newsCategoryOfficial',
@@ -25,53 +26,25 @@ const CATEGORY_KEYS = {
 } as const;
 
 export default function NewsScreen() {
+  const webLayout = useWebLayout();
   const { t, i18n } = useTranslation();
   const { preferences } = usePreferences();
 
-  const [items, setItems] = useState<NewsItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState(false);
-  const [failedImages, setFailedImages] = useState<string[]>([]);
-
-  const loadNews = useCallback(
-    async (isRefresh = false, signal?: AbortSignal) => {
-      if (isRefresh) {
-        setRefreshing(true);
-      } else {
-        setLoading(true);
-      }
-
-      setError(false);
-
-      try {
-        const result = await getNews(10, signal);
-
-        if (!signal?.aborted) {
-          setItems(result.items);
-        }
-      } catch (err) {
-        if (!signal?.aborted) {
-          console.error('Unable to fetch news:', err);
-          setError(true);
-        }
-      } finally {
-        if (!signal?.aborted) {
-          setLoading(false);
-          setRefreshing(false);
-        }
-      }
-    },
-    []
-  );
-
-  useEffect(() => {
-    const controller = new AbortController();
-
-    void loadNews(false, controller.signal);
-
-    return () => controller.abort();
-  }, [loadNews]);
+  const {
+    items, loading, refreshing, loadingMore, error, moreError, hasMore,
+    failedImages, setFailedImages, loadNews, loadMore,
+  } = useNewsFeed();
+  const language = i18n.resolvedLanguage || i18n.language;
+  const feedLabels = language.startsWith('zh') ? {
+    more: '載入較舊消息', loading: '正在載入較舊消息…',
+    error: '較舊消息載入失敗，點此重試', end: '已顯示目前來源提供的所有消息。',
+  } : language.startsWith('ja') ? {
+    more: '過去のお知らせを読み込む', loading: '読み込み中…',
+    error: '取得できませんでした。再試行', end: '取得可能なお知らせをすべて表示しました。',
+  } : {
+    more: 'Load older news', loading: 'Loading older news…',
+    error: 'Unable to load older news. Retry', end: 'All currently available news has been shown.',
+  };
 
   function formatDate(value: string) {
     const date = new Date(value);
@@ -99,15 +72,23 @@ export default function NewsScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={Platform.OS === 'web' ? ['top'] : ['left', 'right']}>
       <ScrollView
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, webLayout.contentStyle]}
+        scrollEventThrottle={150}
+        onScroll={({ nativeEvent }) => {
+          const { contentOffset, contentSize, layoutMeasurement } = nativeEvent;
+          if (contentOffset.y > 0 &&
+              contentOffset.y + layoutMeasurement.height >= contentSize.height - 240) {
+            void loadMore();
+          }
+        }}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
             onRefresh={() => void loadNews(true)}
-            tintColor="#B59AFF"
-            colors={['#B59AFF']}
+            tintColor={FanColors.accent}
+            colors={[FanColors.accent]}
           />
         }
       >
@@ -115,7 +96,8 @@ export default function NewsScreen() {
         <Text style={styles.title}>{t('newsTitle')}</Text>
         <Text style={styles.subtitle}>{t('newsSubtitle')}</Text>
 
-        <Pressable
+        {Platform.OS === 'web' && (
+<Pressable
           style={styles.refreshButton}
           onPress={() => void loadNews(true)}
           disabled={loading || refreshing}
@@ -124,10 +106,11 @@ export default function NewsScreen() {
             {refreshing ? t('newsLoading') : t('newsRefresh')}
           </Text>
         </Pressable>
+        )}
 
         {loading && (
           <View style={styles.status}>
-            <ActivityIndicator color="#B59AFF" size="large" />
+            <ActivityIndicator color={FanColors.accent} size="large" />
             <Text style={styles.muted}>{t('newsLoading')}</Text>
           </View>
         )}
@@ -147,7 +130,7 @@ export default function NewsScreen() {
           </View>
         )}
 
-        {!loading && !error && items.map((item) => (
+        {items.map((item) => (
           <Pressable
             key={item.id}
             style={styles.card}
@@ -203,6 +186,27 @@ export default function NewsScreen() {
           </Pressable>
         ))}
 
+        {items.length > 0 && !loading && (
+          <View style={styles.status}>
+            {loadingMore ? (
+              <>
+                <ActivityIndicator color={FanColors.accent} />
+                <Text style={styles.muted}>{feedLabels.loading}</Text>
+              </>
+            ) : moreError ? (
+              <Pressable accessibilityRole="button" onPress={() => void loadMore(true)}>
+                <Text style={styles.action}>{feedLabels.error}</Text>
+              </Pressable>
+            ) : hasMore ? (
+              <Pressable accessibilityRole="button" disabled={refreshing}
+                onPress={() => void loadMore()}>
+                <Text style={styles.action}>{feedLabels.more}</Text>
+              </Pressable>
+            ) : !error && (
+              <Text style={styles.muted}>{feedLabels.end}</Text>
+            )}
+          </View>
+        )}
         <Text style={styles.footer}>{t('homeFooter')}</Text>
       </ScrollView>
     </SafeAreaView>
@@ -212,30 +216,31 @@ export default function NewsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0B0B12',
+    backgroundColor: FanColors.background,
   },
   content: {
     width: '100%',
     maxWidth: 850,
     alignSelf: 'center',
     padding: 24,
-    paddingTop: Platform.OS === 'web' ? 100 : 24,
+    paddingTop: Platform.OS === 'web' ? 100 : 12,
     paddingBottom: 110,
     gap: 16,
   },
   eyebrow: {
-    color: '#B59AFF',
+    color: FanColors.accent,
     fontSize: 12,
     fontWeight: '700',
     letterSpacing: 2,
   },
   title: {
-    color: '#FFFFFF',
+    color: FanColors.text,
     fontSize: 34,
+    lineHeight: 46,
     fontWeight: '800',
   },
   subtitle: {
-    color: '#AAA6BC',
+    color: FanColors.muted,
     fontSize: 15,
     lineHeight: 24,
   },
@@ -244,27 +249,27 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 16,
     borderRadius: 12,
-    backgroundColor: '#292439',
+    backgroundColor: FanColors.surfaceAlt,
   },
   refreshText: {
-    color: '#C8B4FF',
+    color: FanColors.accent,
     fontSize: 13,
     fontWeight: '600',
   },
   status: {
-    backgroundColor: '#191923',
+    backgroundColor: FanColors.surface,
     padding: 32,
     borderRadius: 22,
     alignItems: 'center',
     gap: 18,
   },
   muted: {
-    color: '#AAA6BC',
+    color: FanColors.muted,
     textAlign: 'center',
     fontSize: 14,
   },
   card: {
-    backgroundColor: '#191923',
+    backgroundColor: FanColors.surface,
     borderRadius: 20,
     padding: 22,
     gap: 14,
@@ -277,12 +282,12 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   category: {
-    color: '#B59AFF',
+    color: FanColors.accent,
     fontSize: 12,
     fontWeight: '700',
   },
   date: {
-    color: '#9993A8',
+    color: FanColors.subtle,
     fontSize: 12,
   },
   newsBody: {
@@ -296,18 +301,18 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   newsTitle: {
-    color: '#FFFFFF',
+    color: FanColors.text,
     fontSize: 17,
     fontWeight: '700',
     lineHeight: 27,
   },
   source: {
-    color: '#AAA6BC',
+    color: FanColors.muted,
     fontSize: 12,
   },
   thumbnail: {
     borderRadius: 12,
-    backgroundColor: '#292439',
+    backgroundColor: FanColors.surfaceAlt,
   },
   thumbnailWeb: {
     width: 110,
@@ -322,17 +327,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   imageFallbackText: {
-    color: '#B59AFF',
+    color: FanColors.accent,
     fontSize: 32,
     fontWeight: '700',
   },
   action: {
-    color: '#B59AFF',
+    color: FanColors.accent,
     fontSize: 13,
     fontWeight: '600',
   },
   footer: {
-    color: '#777386',
+    color: FanColors.subtle,
     textAlign: 'center',
     fontSize: 11,
     marginTop: 20,
