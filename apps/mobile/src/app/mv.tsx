@@ -28,9 +28,6 @@ export default function MvScreen() {
     const controller = new AbortController();
     let active = true;
     const timeout = setTimeout(() => controller.abort(), 45000);
-    setBusy(true);
-    setError(false);
-
     void getAnalytics(controller.signal)
       .then((result) => {
         if (active && !controller.signal.aborted) setData(result);
@@ -53,7 +50,9 @@ export default function MvScreen() {
   function refresh() {
     if (busy) return;
     restartGrowth('refresh');
-    if (!busy) setVersion((current) => current + 1);
+    setBusy(true);
+    setError(false);
+    setVersion((current) => current + 1);
   }
 
   function number(value: number | null) {

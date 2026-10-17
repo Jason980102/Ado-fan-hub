@@ -1,5 +1,5 @@
 import {
-  createContext, useCallback, useContext, useEffect, useMemo, useRef,
+  createContext, useCallback, useContext, useEffect, useMemo, useRef, useState,
   type ReactNode,
 } from 'react';
 import { AccessibilityInfo, Animated, AppState, Easing } from 'react-native';
@@ -14,8 +14,8 @@ const RoseMotionContext = createContext<Motion | null>(null);
 const DURATION = 8500;
 
 export function RoseMotionProvider({ children }: { children: ReactNode }) {
-  const growth = useRef(new Animated.Value(0)).current;
-  const sway = useRef(new Animated.Value(0)).current;
+  const [growth] = useState(() => new Animated.Value(0));
+  const [sway] = useState(() => new Animated.Value(0));
   const restart = useRef<() => void>(() => {});
   const restartGrowth = useCallback((_reason: Reason = 'refresh') => restart.current(), []);
 

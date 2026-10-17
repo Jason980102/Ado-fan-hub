@@ -1,4 +1,4 @@
-﻿import { Platform, useWindowDimensions, type ViewStyle } from 'react-native';
+import { Platform, useWindowDimensions, type ViewStyle } from 'react-native';
 
 export function useWebLayout() {
   const { width } = useWindowDimensions();

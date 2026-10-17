@@ -1,3 +1,4 @@
+import { hubCopy } from '@/localization/hub-copy';
 import OfficialLinkImage from '@/components/official-link-image';
 import RoseScrollView from '@/components/rose-scroll-view';
 import { FanColors } from '@/constants/fan-theme';
@@ -76,6 +77,34 @@ export default function ExploreScreen() {
         <Text style={styles.accent}>ADO FAN HUB</Text>
         <Text style={styles.title}>{text.title}</Text>
         <Text style={styles.muted}>{text.subtitle}</Text>
+        {Platform.OS === 'web' ? (
+          <View style={styles.webFeatures}>
+            {Array.from({ length: webLayout.width >= 800 ? 2 : 4 }, (_, row) => (
+              <View key={row} style={styles.webFeatureRow}>
+                {[
+                  { route: '/about', icon: 'member', title: hubCopy(language).about, note: hubCopy(language).aboutNote },
+                  { route: '/analytics', icon: 'chart', title: text.analytics, note: text.analyticsNote },
+                  { route: '/mv', icon: 'music', title: text.mv, note: text.mvNote },
+                  { route: '/following', icon: 'heart', title: i18n.t('following'), note: '' },
+                ].slice(row * (webLayout.width >= 800 ? 2 : 1), (row + 1) * (webLayout.width >= 800 ? 2 : 1)).map(item => (
+                  <View key={item.route} style={styles.webFeatureCell}>
+                    <AnimatedPressable accessibilityRole="button"
+                      onPress={() => router.push(item.route as '/about' | '/analytics' | '/mv' | '/following')}
+                      style={[styles.card, styles.webFeatureCard]}>
+                      <View style={styles.cardHeading}><ExploreIcon name={item.icon as 'member' | 'chart' | 'music' | 'heart'} /><Text style={styles.heading}>{item.title}</Text></View>
+                      {item.note !== '' && <Text style={styles.muted}>{item.note}</Text>}
+                    </AnimatedPressable>
+                  </View>
+                ))}
+              </View>
+            ))}
+          </View>
+        ) : (
+          <>
+        <AnimatedPressable accessibilityRole="button" onPress={() => router.push('/about')} style={styles.card}>
+          <View style={styles.cardHeading}><ExploreIcon name="member" /><Text style={styles.heading}>{hubCopy(language).about}</Text></View>
+          <Text style={styles.muted}>{hubCopy(language).aboutNote}</Text>
+        </AnimatedPressable>
 
         <AnimatedPressable accessibilityRole="button"
           onPress={() => router.push('/analytics')} style={styles.card}>
@@ -93,6 +122,8 @@ export default function ExploreScreen() {
           onPress={() => router.push('/following')} style={styles.card}>
           <View style={styles.cardHeading}><ExploreIcon name="heart" /><Text style={styles.heading}>{i18n.t('following')}</Text></View>
         </AnimatedPressable>
+          </>
+        )}
 
         <Text style={styles.heading}>{text.official}</Text>
         {error && (
@@ -114,6 +145,10 @@ export default function ExploreScreen() {
 }
 
 const styles = StyleSheet.create({
+  webFeatures: { gap: 14 },
+  webFeatureRow: { flexDirection: 'row', gap: 14 },
+  webFeatureCell: { flex: 1, minWidth: 0 },
+  webFeatureCard: { minHeight: 120, justifyContent: 'center' },
   container: { flex: 1, backgroundColor: FanColors.background },
   content: {
     width: '100%', maxWidth: 850, alignSelf: 'center',

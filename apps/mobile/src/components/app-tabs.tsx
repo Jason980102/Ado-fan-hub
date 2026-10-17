@@ -1,3 +1,4 @@
+import { hubCopy } from '@/localization/hub-copy';
 import Svg, { Path } from 'react-native-svg';
 import { FanColors } from '@/constants/fan-theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -84,6 +85,7 @@ export default function AppTabs() {
       ))}
       <Tabs.Screen name="analytics" options={{ href: null, title: t('analytics:title') }} />
       <Tabs.Screen name="following" options={{ href: null, title: t('following') }} />
+      <Tabs.Screen name="about" options={{ href: null, title: hubCopy(i18n.resolvedLanguage || i18n.language).about }} />
     </Tabs>
   );
 }

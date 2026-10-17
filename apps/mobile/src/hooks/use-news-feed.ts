@@ -31,11 +31,6 @@ export function useNewsFeed() {
     request.current = controller;
     const offset = mode === 'more' ? nextOffset.current : 0;
     const timeout = setTimeout(() => controller.abort(), 45000);
-    setLoading(mode === 'initial');
-    setRefreshing(mode === 'refresh');
-    setLoadingMore(mode === 'more');
-    if (mode === 'more') setMoreError(false);
-    else setError(false);
 
     try {
       const result = await getNews(PAGE_SIZE, controller.signal, offset);
@@ -77,9 +72,19 @@ export function useNewsFeed() {
     };
   }, [load]);
 
-  const loadNews = useCallback((refresh = false) =>
-    load(refresh ? 'refresh' : 'initial'), [load]);
-  const loadMore = useCallback((retry = false) => load('more', retry), [load]);
+  const loadNews = useCallback((refresh = false) => {
+    setLoading(!refresh);
+    setRefreshing(refresh);
+    setLoadingMore(false);
+    setError(false);
+    return load(refresh ? 'refresh' : 'initial');
+  }, [load]);
+  const loadMore = useCallback((retry = false) => {
+    if (request.current || !canLoadMore.current || (appendFailed.current && !retry)) return;
+    setLoadingMore(true);
+    setMoreError(false);
+    return load('more', retry);
+  }, [load]);
 
   return { items, loading, refreshing, loadingMore, error, moreError,
     hasMore, failedImages, setFailedImages, loadNews, loadMore };

@@ -1,4 +1,4 @@
-﻿export const FanColors = {
+export const FanColors = {
   background: '#050B18',
   surface: '#0D192D',
   surfaceAlt: '#122440',

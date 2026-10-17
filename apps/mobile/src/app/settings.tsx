@@ -1,6 +1,6 @@
 import RoseScrollView from '@/components/rose-scroll-view';
 import { FanColors } from '@/constants/fan-theme';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -38,9 +38,11 @@ export default function SettingsScreen() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<'success' | 'error' | ''>('');
 
-  useEffect(() => {
+  const [previousPreferences, setPreviousPreferences] = useState(preferences);
+  if (preferences !== previousPreferences) {
+    setPreviousPreferences(preferences);
     setDraft(preferences);
-  }, [preferences]);
+  }
 
   function changeSetting(
     field: 'language' | 'region' | 'timeZone',

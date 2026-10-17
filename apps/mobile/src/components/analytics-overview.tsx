@@ -51,10 +51,14 @@ export default function AnalyticsOverview({ data, onOpenVideo }: { data: Analyti
   const { i18n } = useTranslation();
   const { preferences } = usePreferences();
   const [width, setWidth] = useState(0);
-  const [growth, setGrowth] = useState<Growth | null>(null);
-  const [error, setError] = useState(false);
-  const [busy, setBusy] = useState(true);
+  const [result, setResult] = useState<{
+    data: AnalyticsResponse; attempt: number; growth: Growth | null; error: boolean;
+  } | null>(null);
   const [retry, setRetry] = useState(0);
+  const current = result?.data === data && result.attempt === retry ? result : null;
+  const growth = current?.growth ?? null;
+  const error = current?.error ?? false;
+  const busy = current === null;
   const [failed, setFailed] = useState<string[]>([]);
   const columns = width < 260 ? 1 : Platform.OS === 'web' && width >= 660 ? 3 : 2;
   const tileWidth = Math.max(1, (width - 12 * (columns - 1)) / columns);
@@ -65,7 +69,6 @@ export default function AnalyticsOverview({ data, onOpenVideo }: { data: Analyti
     const controller = new AbortController();
     let active = true;
     const timer = setTimeout(() => controller.abort(), 20000);
-    setBusy(true); setError(false); setGrowth(null);
     const base = process.env.EXPO_PUBLIC_ANALYTICS_API_URL || process.env.EXPO_PUBLIC_API_URL;
     void (async () => {
       try {
@@ -74,9 +77,9 @@ export default function AnalyticsOverview({ data, onOpenVideo }: { data: Analyti
         if (!response.ok) throw new Error('Growth unavailable');
         const result: Growth = await response.json();
         if (!validGrowth(result) || result.channel_id !== data.channel.id) throw new Error('Invalid growth');
-        if (active) setGrowth(result);
-      } catch { if (active) setError(true); }
-      finally { clearTimeout(timer); if (active) setBusy(false); }
+        if (active) setResult({ data, attempt: retry, growth: result, error: false });
+      } catch { if (active) setResult({ data, attempt: retry, growth: null, error: true }); }
+      finally { clearTimeout(timer); }
     })();
     return () => { active = false; clearTimeout(timer); controller.abort(); };
   }, [data, retry]);

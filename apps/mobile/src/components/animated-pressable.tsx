@@ -1,4 +1,4 @@
-﻿import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   AccessibilityInfo, Animated, Pressable,
   type PressableProps,
@@ -7,7 +7,7 @@ import {
 export default function AnimatedPressable({
   onPressIn, onPressOut, ...props
 }: PressableProps) {
-  const progress = useRef(new Animated.Value(0)).current;
+  const [progress] = useState(() => new Animated.Value(0));
   const reduceMotion = useRef(true);
 
   useEffect(() => {
