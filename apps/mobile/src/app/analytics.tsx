@@ -20,12 +20,13 @@ import {
   type ChannelHistoryResponse,
 } from '@/services/analytics-api';
 import HistoryChangeChart from '@/components/history-change-chart';
-import AnimatedNumber from '@/components/animated-number';
+import AnalyticsOverview, { useDashboardWords } from '@/components/analytics-overview';
 import { useFocusEffect } from 'expo-router';
 import MvBarChart from '@/components/mv-bar-chart';
 import CollapsibleSection from '@/components/collapsible-section';
 
 export default function AnalyticsScreen() {
+  const dashboardWords = useDashboardWords();
   const { restartGrowth } = useRoseMotion();
   const webLayout = useWebLayout();
   const { t, i18n } = useTranslation('analytics');
@@ -173,7 +174,7 @@ export default function AnalyticsScreen() {
   return (
     <SafeAreaView style={styles.container} edges={Platform.OS === 'web' ? ['top'] : ['left', 'right']}>
       <RoseScrollView
-        contentContainerStyle={[styles.content, webLayout.contentStyle]}
+        contentContainerStyle={[styles.content, webLayout.contentStyle, Platform.OS === 'web' && styles.webContent]}
         refreshControl={
           <RefreshControl
             refreshing={busy && data !== null}
@@ -183,19 +184,25 @@ export default function AnalyticsScreen() {
           />
         }
       >
-        <Text style={styles.accent}>ADO FAN HUB</Text>
-        <Text style={styles.title}>{t('title')}</Text>
-        <Text style={styles.muted}>{t('subtitle')}</Text>
-        {Platform.OS === 'web' && (
-<Pressable
-          accessibilityRole="button"
-          style={styles.button}
-          disabled={busy}
-          onPress={refresh}
-        >
-          <Text style={styles.accent}>{busy ? t('loading') : t('refresh')}</Text>
-        </Pressable>
-)}
+        {Platform.OS === 'web' ? (
+          <View style={styles.webHeader}>
+            <View style={styles.webHeading}>
+              <Text style={styles.accent}>ADO FAN HUB</Text>
+              <Text style={styles.title}>{t('title')}</Text>
+              <Text style={styles.muted}>{t('subtitle')}</Text>
+            </View>
+            <Pressable accessibilityRole="button" style={styles.webRefresh}
+              disabled={busy} onPress={refresh}>
+              <Text style={styles.accent}>{busy ? t('loading') : t('refresh')}</Text>
+            </Pressable>
+          </View>
+        ) : (
+          <>
+            <Text style={styles.accent}>ADO FAN HUB</Text>
+            <Text style={styles.title}>{t('title')}</Text>
+            <Text style={styles.muted}>{t('subtitle')}</Text>
+          </>
+        )}
 
         {busy && !data && <ActivityIndicator color={FanColors.accent} size="large" />}
 
@@ -222,7 +229,7 @@ export default function AnalyticsScreen() {
                       ? getChannelAvatarUrl()
                       : data.channel.avatar_url,
                   }}
-                  style={styles.avatar}
+                  style={[styles.avatar, Platform.OS === 'web' && styles.webAvatar]}
                   resizeMode="cover"
                   accessibilityLabel={`${data.channel.title} YouTube`}
                   onError={() => setFailedImages((current) =>
@@ -232,7 +239,7 @@ export default function AnalyticsScreen() {
                   )}
                 />
               ) : (
-                <View style={[styles.avatar, styles.fallback]}>
+                <View style={[styles.avatar, styles.fallback, Platform.OS === 'web' && styles.webAvatar]}>
                   <Text style={styles.heading}>Ado</Text>
                 </View>
               )}
@@ -240,31 +247,8 @@ export default function AnalyticsScreen() {
                 {data.channel.title} · YouTube
               </Text>
             </View>
-            <View style={styles.stats}>
-              {[
-                ['subscribers', data.channel.subscriber_count],
-                ['views', data.channel.view_count],
-                ['videos', data.channel.video_count],
-              ].map(([key, value]) => (
-                <View key={String(key)} style={[styles.card, styles.stat]}>
-                  <Text style={styles.muted}>{t(String(key))}</Text>
-                  {pageFocused && (
-                    <AnimatedNumber
-                      value={value as number | null}
-                      formatNumber={number}
-                      style={styles.value}
-                      prefix={
-                        key === 'subscribers' &&
-                          data.channel.subscriber_count !== null &&
-                          data.channel.subscriber_count_is_approximate
-                          ? `${t('approx')} `
-                          : ''
-                      }
-                    />
-                  )}
-                </View>
-              ))}
-            </View>
+            <AnalyticsOverview data={data} onOpenVideo={(id) => void openVideo(id)} />
+            <CollapsibleSection title={dashboardWords.more} active={pageFocused}>
             <Text style={styles.muted}>
               {t('updated')}: {date(data.fetched_at, true)}
               {' · '}{preferences.timeZone}
@@ -398,6 +382,7 @@ export default function AnalyticsScreen() {
 
             </CollapsibleSection>
 
+            </CollapsibleSection>
             {linkError && (
               <Text accessibilityRole="alert" style={styles.muted}>
                 {t('linkError')}
@@ -413,6 +398,11 @@ export default function AnalyticsScreen() {
 }
 
 const styles = StyleSheet.create({
+  webContent: { maxWidth: 900, gap: 14 },
+  webHeader: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 16, marginBottom: 4 },
+  webHeading: { flex: 1, minWidth: 180, gap: 8 },
+  webRefresh: { paddingHorizontal: 16, paddingVertical: 12, borderRadius: 12, backgroundColor: FanColors.surfaceAlt },
+  webAvatar: { width: 44, height: 44, borderRadius: 22 },
   container: { flex: 1, backgroundColor: FanColors.background },
   content: {
     width: '100%', maxWidth: 850, alignSelf: 'center',

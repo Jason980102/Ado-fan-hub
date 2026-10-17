@@ -1,3 +1,4 @@
+from analytics_growth import router as analytics_growth_router
 from official_images import router as official_images_router
 from analytics import router as analytics_router
 from typing import Annotated
@@ -61,4 +62,5 @@ def list_news(
         ) from None
 
 app.include_router(analytics_router)
+app.include_router(analytics_growth_router)
 app.include_router(official_images_router)

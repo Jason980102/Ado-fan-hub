@@ -26,6 +26,17 @@ def initialize_database():
                     PRIMARY KEY (channel_id, fetched_at)
                 )
             """)
+            connection.execute("""
+                CREATE TABLE IF NOT EXISTS video_snapshots (
+                    channel_id TEXT NOT NULL,
+                    video_id TEXT NOT NULL,
+                    fetched_at TEXT NOT NULL,
+                    title TEXT NOT NULL,
+                    thumbnail_url TEXT,
+                    view_count INTEGER,
+                    PRIMARY KEY (channel_id, fetched_at, video_id)
+                )
+            """)
     finally:
         connection.close()
 
@@ -56,6 +67,14 @@ def save_channel_snapshot(analytics):
                     channel.view_count,
                     channel.video_count,
                 ),
+            )
+            connection.executemany(
+                """INSERT INTO video_snapshots
+                   (channel_id, video_id, fetched_at, title, thumbnail_url, view_count)
+                   VALUES (?, ?, ?, ?, ?, ?)
+                   ON CONFLICT (channel_id, fetched_at, video_id) DO NOTHING""",
+                [(channel.id, video.id, analytics.fetched_at.isoformat(), video.title,
+                  video.thumbnail_url, video.view_count) for video in analytics.videos],
             )
     finally:
         connection.close()
