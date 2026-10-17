@@ -100,3 +100,11 @@ const rankingTranslations = {
 for (const [language, texts] of Object.entries(rankingTranslations)) {
   i18n.addResourceBundle(language, 'analytics', texts, true, true);
 }
+
+for (const [language, historyChangesNote] of Object.entries({
+  'zh-TW': '僅比較已累積快照；顯示區間起點、最新值與淨增減。每根柱子標示實際比較時段，缺資料不補零。',
+  en: 'Based on collected snapshots: first value, latest value and net change. Each bar compares its actual time interval; missing data is not filled with zero.',
+  ja: '収集済みの記録の開始値・最新値・純増減を表示します。各棒は実際の記録区間の比較で、欠損値は0で補完しません。',
+})) {
+  i18n.addResourceBundle(language, 'analytics', { historyChangesNote }, true, true);
+}

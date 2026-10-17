@@ -19,7 +19,7 @@ import {
   type AnalyticsResponse,
   type ChannelHistoryResponse,
 } from '@/services/analytics-api';
-import HistoryLineChart from '@/components/history-line-chart';
+import HistoryChangeChart from '@/components/history-change-chart';
 import AnimatedNumber from '@/components/animated-number';
 import { useFocusEffect } from 'expo-router';
 import MvBarChart from '@/components/mv-bar-chart';
@@ -306,7 +306,7 @@ export default function AnalyticsScreen() {
               {busy && !history && (
                 <ActivityIndicator color={FanColors.accent} />
               )}
-              <Text style={styles.muted}>{t('historyNote')}</Text>
+              <Text style={styles.muted}>{t('historyChangesNote')}</Text>
               <Text style={styles.muted}>{preferences.timeZone}</Text>
               {history?.truncated && (
                 <Text style={styles.muted}>{t('historyTruncated')}</Text>
@@ -318,8 +318,9 @@ export default function AnalyticsScreen() {
               )}
               {history && (
                 <>
-                  <HistoryLineChart
+                  <HistoryChangeChart
                     title={t('subscribers')}
+                    approximate={true}
                     points={history.points.map((point) => ({
                       timestamp: Date.parse(point.fetched_at),
                       value: point.subscriber_count,
@@ -327,8 +328,9 @@ export default function AnalyticsScreen() {
                     emptyLabel={t('unknown')}
                     formatNumber={number}
                     formatTime={historyTime}
+                    timeZone={preferences.timeZone}
                   />
-                  <HistoryLineChart
+                  <HistoryChangeChart
                     title={t('views')}
                     points={history.points.map((point) => ({
                       timestamp: Date.parse(point.fetched_at),
@@ -337,6 +339,7 @@ export default function AnalyticsScreen() {
                     emptyLabel={t('unknown')}
                     formatNumber={number}
                     formatTime={historyTime}
+                    timeZone={preferences.timeZone}
                   />
                 </>
               )}
