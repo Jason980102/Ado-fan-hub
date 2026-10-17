@@ -1,3 +1,4 @@
+import OfficialLinkImage from '@/components/official-link-image';
 import RoseScrollView from '@/components/rose-scroll-view';
 import { FanColors } from '@/constants/fan-theme';
 import { useWebLayout } from '@/hooks/use-web-layout';
@@ -48,14 +49,17 @@ export default function ExploreScreen() {
   const text = language.startsWith('zh') ? translations.zh
     : language.startsWith('ja') ? translations.ja : translations.en;
   const [error, setError] = useState(false);
+  const [linksWidth, setLinksWidth] = useState(0);
+  const columns = Platform.OS === 'web' ? Math.max(1, Math.min(3, Math.floor((linksWidth + 14) / 354))) : 1;
+  const linkWidth = columns > 1 ? (linksWidth - 14 * (columns - 1)) / columns : undefined;
 
   const links = [
-    { title: 'X (Twitter)', url: 'https://x.com/ado1024imokenp' },
-    { title: 'Instagram', url: 'https://www.instagram.com/ado1024sweetpotet/' },
-    { title: 'niconico', url: 'https://www.nicovideo.jp/user/39170211/mylist/58569901' },
-    { title: text.member, url: 'https://ado-dokidokihimitsukichi-daigakuimo.com/' },
-    { title: text.shop, url: 'https://ado-officialshop-friedpotato.com/' },
-  ];
+    { id: 'x', title: 'X (Twitter)', url: 'https://x.com/ado1024imokenp' },
+    { id: 'instagram', title: 'Instagram', url: 'https://www.instagram.com/ado1024sweetpotet/' },
+    { id: 'niconico', title: 'niconico', url: 'https://www.nicovideo.jp/user/39170211/mylist/58569901' },
+    { id: 'member', title: text.member, url: 'https://ado-dokidokihimitsukichi-daigakuimo.com/' },
+    { id: 'shop', title: text.shop, url: 'https://ado-officialshop-friedpotato.com/' },
+  ] as const;
 
   async function openLink(url: string) {
     setError(false);
@@ -94,11 +98,11 @@ export default function ExploreScreen() {
         {error && (
           <Text accessibilityRole="alert" style={styles.muted}>{text.error}</Text>
         )}
-        <View style={styles.links}>
+        <View style={[styles.links, Platform.OS === 'web' && styles.webLinks]} onLayout={(event) => setLinksWidth(event.nativeEvent.layout.width)}>
           {links.map((link) => (
             <AnimatedPressable key={link.url} accessibilityRole="link"
-              onPress={() => void openLink(link.url)} style={styles.card}>
-              <View style={styles.cardHeading}><View style={styles.iconCircle}><ExploreIcon name={link.title === 'X (Twitter)' ? 'x' : link.title === 'Instagram' ? 'instagram' : link.title === 'niconico' ? 'video' : link.title === text.member ? 'member' : 'shop'} /></View><View style={styles.linkDetails}><Text style={styles.heading}>{link.title}</Text><Text style={styles.accent}>{text.external}</Text></View></View>
+              onPress={() => void openLink(link.url)} style={[styles.card, Platform.OS === 'web' && styles.linkCard, linkWidth !== undefined && { width: linkWidth }]}>
+              <View style={styles.cardHeading}><OfficialLinkImage source={link.id} /><View style={styles.linkDetails}><Text style={styles.heading}>{link.title}</Text><Text style={styles.accent}>{text.external}</Text></View></View>
 
             </AnimatedPressable>
           ))}
@@ -122,6 +126,8 @@ const styles = StyleSheet.create({
   muted: { color: FanColors.muted, fontSize: 14, lineHeight: 23 },
   card: { padding: 22, borderRadius: 20, backgroundColor: FanColors.surface, gap: 10 },
   links: { gap: 14 },
+  webLinks: { flexDirection: 'row', flexWrap: 'wrap' },
+  linkCard: { width: '100%', justifyContent: 'center' },
   cardHeading: { flexDirection: 'row', alignItems: 'center', gap: 16 },
   iconCircle: {
     width: 60, height: 60, borderRadius: 30,
