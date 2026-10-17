@@ -20,6 +20,7 @@ class NewsItem(BaseModel):
     source_url: HttpUrl
     published_at: datetime
     language: str
+    image_url: HttpUrl | None = None
 
 
 class NewsListResponse(BaseModel):
