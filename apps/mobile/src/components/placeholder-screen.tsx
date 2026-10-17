@@ -1,5 +1,6 @@
+import RoseScrollView from '@/components/rose-scroll-view';
 import { FanColors } from '@/constants/fan-theme';
-import { Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Platform, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 
@@ -16,8 +17,8 @@ export default function PlaceholderScreen({
 }: PlaceholderScreenProps) {
   const { t } = useTranslation();
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <ScrollView contentContainerStyle={styles.content}>
+    <SafeAreaView style={styles.container} edges={Platform.OS === 'web' ? ['top'] : ['left', 'right']}>
+      <RoseScrollView contentContainerStyle={styles.content}>
         <Text style={styles.eyebrow}>ADO FAN HUB</Text>
         <Text style={styles.title}>{title}</Text>
         <Text style={styles.subtitle}>{subtitle}</Text>
@@ -38,7 +39,7 @@ export default function PlaceholderScreen({
         <Text style={styles.footer}>
           {t('developmentFooter')}
         </Text>
-      </ScrollView>
+      </RoseScrollView>
     </SafeAreaView>
   );
 }

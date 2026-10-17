@@ -1,3 +1,4 @@
+import { useRoseMotion } from '@/contexts/rose-motion-context';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { getNews, type NewsItem } from '@/services/news-api';
 
@@ -5,6 +6,7 @@ type Mode = 'initial' | 'refresh' | 'more';
 const PAGE_SIZE = 10;
 
 export function useNewsFeed() {
+  const { restartGrowth } = useRoseMotion();
   const [items, setItems] = useState<NewsItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -24,6 +26,7 @@ export function useNewsFeed() {
     } else {
       request.current?.abort();
     }
+    if (mode === 'refresh') restartGrowth('refresh');
     const controller = new AbortController();
     request.current = controller;
     const offset = mode === 'more' ? nextOffset.current : 0;
@@ -63,7 +66,7 @@ export function useNewsFeed() {
         setLoadingMore(false);
       }
     }
-  }, []);
+  }, [restartGrowth]);
 
   useEffect(() => {
     void load('initial');

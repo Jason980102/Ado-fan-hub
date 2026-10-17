@@ -1,5 +1,6 @@
-import { forwardRef, useEffect, useRef, useState, type ComponentProps, type ComponentRef } from 'react';
-import { AccessibilityInfo, Animated, AppState, Easing, Platform, StyleSheet, View } from 'react-native';
+import { useRoseMotion } from '@/contexts/rose-motion-context';
+import { forwardRef, useState, type ComponentProps, type ComponentRef } from 'react';
+import { Animated, Platform, StyleSheet, View } from 'react-native';
 import Svg, { G, Path } from 'react-native-svg';
 
 const flowers = [
@@ -17,74 +18,11 @@ const SafePath = forwardRef<ComponentRef<typeof Path>, SafeProps>(
   }
 );
 const AnimatedPath = Animated.createAnimatedComponent(SafePath);
-// Shared across page mounts: navigation does not restart the entrance animation.
-let entranceStartedAt: number | null = null;
-const duration = 8500;
 
 export default function MobileRoseFrame() {
   const [size, setSize] = useState({ width: 0, height: 0 });
-  const growth = useRef(new Animated.Value(0)).current;
-  const sway = useRef(new Animated.Value(0)).current;
+  const { growth, sway } = useRoseMotion();
 
-  useEffect(() => {
-    if (Platform.OS === 'web') return;
-    let alive = true;
-    let reduced = true;
-    let preferenceChanged = false;
-    let active = AppState.currentState === 'active';
-    let entrance: Animated.CompositeAnimation | undefined;
-    let breeze: Animated.CompositeAnimation | undefined;
-
-    function update() {
-      entrance?.stop();
-      breeze?.stop();
-      sway.setValue(0);
-      if (!alive) return;
-      if (reduced) {
-        entranceStartedAt ??= Date.now() - duration;
-        growth.setValue(1);
-        return;
-      }
-      if (!active) return;
-      entranceStartedAt ??= Date.now();
-      const elapsed = Math.min(duration, Date.now() - entranceStartedAt);
-      growth.setValue(elapsed / duration);
-      if (elapsed < duration) {
-        entrance = Animated.timing(growth, {
-          toValue: 1, duration: duration - elapsed,
-          easing: Easing.linear, useNativeDriver: false,
-        });
-        entrance.start();
-      }
-      breeze = Animated.loop(Animated.sequence([
-        Animated.timing(sway, { toValue: 1, duration: 6500,
-          easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
-        Animated.timing(sway, { toValue: 0, duration: 6500,
-          easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
-      ]));
-      breeze.start();
-    }
-
-    const motion = AccessibilityInfo.addEventListener('reduceMotionChanged', (value) => {
-      preferenceChanged = true;
-      reduced = value;
-      update();
-    });
-    const app = AppState.addEventListener('change', (value) => {
-      active = value === 'active';
-      update();
-    });
-    void AccessibilityInfo.isReduceMotionEnabled().then((value) => {
-      if (!alive || preferenceChanged) return;
-      reduced = value;
-      update();
-    }).catch(() => { if (alive) { reduced = true; update(); } });
-    return () => {
-      alive = false;
-      entrance?.stop(); breeze?.stop();
-      motion.remove(); app.remove();
-    };
-  }, [growth, sway]);
 
   if (Platform.OS === 'web') return null;
   const w = size.width;

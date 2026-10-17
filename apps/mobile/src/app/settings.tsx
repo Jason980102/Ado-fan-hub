@@ -1,3 +1,4 @@
+import RoseScrollView from '@/components/rose-scroll-view';
 import { FanColors } from '@/constants/fan-theme';
 import { useEffect, useState } from 'react';
 import {
@@ -5,7 +6,6 @@ import {
   Alert,
   Platform,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -81,8 +81,8 @@ export default function SettingsScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <ScrollView contentContainerStyle={styles.content}>
+    <SafeAreaView style={styles.container} edges={Platform.OS === 'web' ? ['top'] : ['left', 'right']}>
+      <RoseScrollView contentContainerStyle={styles.content}>
         <Text style={styles.eyebrow}>ADO FAN HUB</Text>
         <Text style={styles.title}>{t('settings')}</Text>
         <Text style={styles.subtitle}>
@@ -146,7 +146,7 @@ export default function SettingsScreen() {
             onClose={() => setActiveSelection(null)}
           />
         )}
-      </ScrollView>
+      </RoseScrollView>
     </SafeAreaView>
   );
 }

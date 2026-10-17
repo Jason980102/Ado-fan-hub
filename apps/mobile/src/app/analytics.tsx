@@ -1,9 +1,11 @@
+import { useRoseMotion } from '@/contexts/rose-motion-context';
+import RoseScrollView from '@/components/rose-scroll-view';
 import { FanColors } from '@/constants/fan-theme';
 import { useWebLayout } from '@/hooks/use-web-layout';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator, Image, Linking, Platform, Pressable,
-  RefreshControl, ScrollView, StyleSheet, Text, View,
+  RefreshControl, StyleSheet, Text, View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
@@ -24,6 +26,7 @@ import MvBarChart from '@/components/mv-bar-chart';
 import CollapsibleSection from '@/components/collapsible-section';
 
 export default function AnalyticsScreen() {
+  const { restartGrowth } = useRoseMotion();
   const webLayout = useWebLayout();
   const { t, i18n } = useTranslation('analytics');
   const { preferences } = usePreferences();
@@ -98,6 +101,8 @@ export default function AnalyticsScreen() {
   }, [days]);
 
   function refresh() {
+    if (busy) return;
+    restartGrowth('refresh');
     setBusy(true);
     setError(false);
     void load();
@@ -167,7 +172,7 @@ export default function AnalyticsScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={Platform.OS === 'web' ? ['top'] : ['left', 'right']}>
-      <ScrollView
+      <RoseScrollView
         contentContainerStyle={[styles.content, webLayout.contentStyle]}
         refreshControl={
           <RefreshControl
@@ -399,7 +404,7 @@ export default function AnalyticsScreen() {
           </>
         )}
         <Text style={styles.footer}>{i18n.t('homeFooter')}</Text>
-      </ScrollView>
+      </RoseScrollView>
     </SafeAreaView>
   );
 }

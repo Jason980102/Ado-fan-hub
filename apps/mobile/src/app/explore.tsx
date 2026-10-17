@@ -1,10 +1,11 @@
+import RoseScrollView from '@/components/rose-scroll-view';
 import { FanColors } from '@/constants/fan-theme';
 import { useWebLayout } from '@/hooks/use-web-layout';
 import ExploreIcon from '@/components/explore-icon';
 import { useState } from 'react';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { Linking, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Linking, Platform, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import AnimatedPressable from '@/components/animated-pressable';
@@ -67,7 +68,7 @@ export default function ExploreScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={Platform.OS === 'web' ? ['top'] : ['left', 'right']}>
-      <ScrollView contentContainerStyle={[styles.content, webLayout.contentStyle]}>
+      <RoseScrollView contentContainerStyle={[styles.content, webLayout.contentStyle]}>
         <Text style={styles.accent}>ADO FAN HUB</Text>
         <Text style={styles.title}>{text.title}</Text>
         <Text style={styles.muted}>{text.subtitle}</Text>
@@ -103,7 +104,7 @@ export default function ExploreScreen() {
           ))}
         </View>
         <Text style={styles.muted}>{text.note}</Text>
-      </ScrollView>
+      </RoseScrollView>
     </SafeAreaView>
   );
 }

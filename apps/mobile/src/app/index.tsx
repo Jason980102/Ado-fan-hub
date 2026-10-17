@@ -1,7 +1,7 @@
-import MobileRoseFrame from '@/components/mobile-rose-frame';
+import RoseScrollView from '@/components/rose-scroll-view';
 import { FanColors } from '@/constants/fan-theme';
 import { useWebLayout } from '@/hooks/use-web-layout';
-import { Image, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, Platform, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 
@@ -28,11 +28,10 @@ export default function HomeScreen() {
   return (
     <View style={styles.container}>
       <SafeAreaView style={styles.safeArea} edges={['top']}>
-        <ScrollView
+        <RoseScrollView
           contentContainerStyle={[styles.content, webLayout.contentStyle]}
           showsVerticalScrollIndicator={false}
         >
-          <MobileRoseFrame />
           <View style={{ gap: 12 }}>
             <Text style={styles.eyebrow}>{t('homeEyebrow')}</Text>
             <View style={{
@@ -97,7 +96,7 @@ export default function HomeScreen() {
           <Text style={styles.footer}>
             {t('homeFooter')}
           </Text>
-        </ScrollView>
+        </RoseScrollView>
       </SafeAreaView>
     </View>
   );

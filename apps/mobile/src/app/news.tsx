@@ -1,3 +1,4 @@
+import RoseScrollView from '@/components/rose-scroll-view';
 import { FanColors } from '@/constants/fan-theme';
 import { useWebLayout } from '@/hooks/use-web-layout';
 import {
@@ -7,7 +8,6 @@ import {
   Platform,
   Pressable,
   RefreshControl,
-  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -73,7 +73,7 @@ export default function NewsScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={Platform.OS === 'web' ? ['top'] : ['left', 'right']}>
-      <ScrollView
+      <RoseScrollView
         contentContainerStyle={[styles.content, webLayout.contentStyle]}
         scrollEventThrottle={150}
         onScroll={({ nativeEvent }) => {
@@ -208,7 +208,7 @@ export default function NewsScreen() {
           </View>
         )}
         <Text style={styles.footer}>{t('homeFooter')}</Text>
-      </ScrollView>
+      </RoseScrollView>
     </SafeAreaView>
   );
 }

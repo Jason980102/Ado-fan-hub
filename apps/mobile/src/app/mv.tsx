@@ -1,9 +1,11 @@
+import { useRoseMotion } from '@/contexts/rose-motion-context';
+import RoseScrollView from '@/components/rose-scroll-view';
 import { FanColors } from '@/constants/fan-theme';
 import { useWebLayout } from '@/hooks/use-web-layout';
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator, Linking, Platform, Pressable,
-  RefreshControl, ScrollView, StyleSheet, Text,
+  RefreshControl, StyleSheet, Text,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
@@ -13,6 +15,7 @@ import MvCatalog from '@/components/mv-catalog';
 import { getAnalytics, type AnalyticsResponse } from '@/services/analytics-api';
 
 export default function MvScreen() {
+  const { restartGrowth } = useRoseMotion();
   const webLayout = useWebLayout();
   const { t, i18n } = useTranslation('analytics');
   const [data, setData] = useState<AnalyticsResponse | null>(null);
@@ -48,6 +51,8 @@ export default function MvScreen() {
   }, [version]);
 
   function refresh() {
+    if (busy) return;
+    restartGrowth('refresh');
     if (!busy) setVersion((current) => current + 1);
   }
 
@@ -67,7 +72,7 @@ export default function MvScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={Platform.OS === 'web' ? ['top'] : ['left', 'right']}>
-      <ScrollView contentContainerStyle={[styles.content, webLayout.contentStyle]}
+      <RoseScrollView contentContainerStyle={[styles.content, webLayout.contentStyle]}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
         refreshControl={
@@ -96,7 +101,7 @@ export default function MvScreen() {
             <Text style={styles.muted}>{t('source')}: {data.source}</Text>
           </>
         )}
-      </ScrollView>
+      </RoseScrollView>
     </SafeAreaView>
   );
 }

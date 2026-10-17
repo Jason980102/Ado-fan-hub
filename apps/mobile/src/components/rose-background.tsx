@@ -1,7 +1,7 @@
+import { useRoseMotion } from '@/contexts/rose-motion-context';
 import { forwardRef, type ComponentProps, type ComponentRef } from 'react';
-import { useEffect, useRef } from 'react';
 import {
-  AccessibilityInfo, Animated, AppState, Easing,
+  Animated,
   Platform, StyleSheet, View, useWindowDimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -97,75 +97,13 @@ function MobileCrossVine({ growth }: { growth: Animated.Value }) {
 export default function RoseBackground() {
   const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
-  const progress = useRef(new Animated.Value(0)).current;
-  const growth = useRef(new Animated.Value(0)).current;
+  const { growth, sway: progress } = useRoseMotion();
   const isWeb = Platform.OS === 'web';
   const edgeWidth = isWeb
     ? Math.min(110, Math.max(28, (width - 1280) / 2))
     : 28;
   const roseSize = Math.min(72, edgeWidth + 10);
 
-  useEffect(() => {
-    let mounted = true;
-    let reduced = true;
-    let preferenceChanged = false;
-    let appActive = AppState.currentState === 'active';
-    let animation: Animated.CompositeAnimation | undefined;
-
-    function update() {
-      animation?.stop();
-      progress.setValue(0);
-      growth.stopAnimation();
-      if (reduced) {
-        growth.setValue(1);
-      } else if (mounted && appActive) {
-        Animated.timing(growth, {
-          toValue: 1,
-          duration: 8500,
-          easing: Easing.linear,
-          useNativeDriver: false,
-        }).start();
-      }
-      if (!mounted || reduced || !appActive) return;
-      animation = Animated.loop(Animated.sequence([
-        Animated.timing(progress, {
-          toValue: 1, duration: 6500,
-          easing: Easing.inOut(Easing.sin), useNativeDriver: true,
-        }),
-        Animated.timing(progress, {
-          toValue: 0, duration: 6500,
-          easing: Easing.inOut(Easing.sin), useNativeDriver: true,
-        }),
-      ]));
-      animation.start();
-    }
-
-    const motionSubscription = AccessibilityInfo.addEventListener(
-      'reduceMotionChanged', (value) => {
-        preferenceChanged = true;
-        reduced = value;
-        update();
-      }
-    );
-    const appSubscription = AppState.addEventListener('change', (state) => {
-      appActive = state === 'active';
-      update();
-    });
-
-    void AccessibilityInfo.isReduceMotionEnabled().then((value) => {
-      if (!mounted || preferenceChanged) return;
-      reduced = value;
-      update();
-    }).catch(() => {});
-
-    return () => {
-      mounted = false;
-      animation?.stop();
-      growth.stopAnimation();
-      motionSubscription.remove();
-      appSubscription.remove();
-    };
-  }, [progress, growth]);
 
   if (!isWeb) return null;
 

@@ -1,4 +1,5 @@
-﻿import RoseBackground from '@/components/rose-background';
+import { RoseMotionProvider } from '@/contexts/rose-motion-context';
+import RoseBackground from '@/components/rose-background';
 import { FanColors } from '@/constants/fan-theme';
 import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -36,7 +37,14 @@ function AppContent() {
     return <OnboardingScreen />;
   }
 
-  return <AppTabs />;
+  return (
+    <RoseMotionProvider>
+      <View style={{ flex: 1, backgroundColor: FanColors.background }}>
+        <AppTabs />
+        <RoseBackground />
+      </View>
+    </RoseMotionProvider>
+  );
 }
 
 export default function TabLayout() {
@@ -50,7 +58,6 @@ export default function TabLayout() {
         <AnimatedSplashOverlay />
         <View style={{ flex: 1, backgroundColor: FanColors.background }}>
           <AppContent />
-          <RoseBackground />
         </View>
       </ThemeProvider>
     </PreferencesProvider>
@@ -65,4 +72,3 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 });
-
