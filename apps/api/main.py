@@ -24,7 +24,7 @@ from fastapi.middleware.cors import CORSMiddleware
 async def mv_lifespan(app):
     scheduler = MVSyncScheduler(
         {
-            "feed": (300, sync_recent_feed),
+            "feed": (60, sync_recent_feed),
             "playlists": (900, sync_official_playlists),
             "uploads": (21600, sync_full_uploads),
         },

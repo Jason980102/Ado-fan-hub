@@ -1,3 +1,4 @@
+import { refreshPageData } from '@/hooks/use-page-data';
 import { compactNumber } from '@/components/analytics-overview';
 import { useHomeRanking } from '@/hooks/use-home-ranking';
 import { getAnalytics } from '@/services/analytics-api';
@@ -58,7 +59,7 @@ export default function HomeScreen() {
             <View style={[s.subscriberBadge, Platform.OS === 'web' && s.subscriberBadgeWeb]}>
               <Text style={s.subscriberLabel} numberOfLines={1} adjustsFontSizeToFit>YouTube · {t('subscribers')}</Text>
               {!totals.current ? <ActivityIndicator color={C.accent} accessibilityLabel={t('loading')} />
-                : totals.current.error ? <Pressable accessibilityRole="button" accessibilityLabel={`${t('error')} ${t('retry')}`} onPress={totals.retry} style={s.subscriberRetry}>
+                : totals.current.error && !totals.current.data ? <Pressable accessibilityRole="button" accessibilityLabel={`${t('error')} ${t('retry')}`} onPress={totals.retry} style={s.subscriberRetry}>
                     <Text accessibilityRole="alert" style={s.subscriberValue}>{t('unknown')} · {t('retry')}</Text>
                   </Pressable>
                 : <Text style={s.subscriberValue} numberOfLines={1} adjustsFontSizeToFit>{subscriberCount}</Text>}
@@ -67,7 +68,7 @@ export default function HomeScreen() {
   return <SafeAreaView style={s.screen} edges={Platform.OS === 'web' ? ['top'] : ['top', 'left', 'right']}>
     <RoseScrollView contentContainerStyle={[s.content, layout.contentStyle, Platform.OS === 'web' && { maxWidth: 1120 }]}
       showsVerticalScrollIndicator={false}
-      refreshControl={Platform.OS !== 'web' ? <RefreshControl refreshing={feed.refreshing} onRefresh={() => void feed.loadNews(true)} tintColor={C.accent} colors={[C.accent]} /> : undefined}>
+      refreshControl={Platform.OS !== 'web' ? <RefreshControl refreshing={feed.refreshing} onRefresh={refreshPageData} tintColor={C.accent} colors={[C.accent]} /> : undefined}>
       <View style={s.brandCopy}>
         <View style={s.brand}>
           <Image source={require('../../assets/images/blue-rose-icon.png')} resizeMode="contain" style={s.rose} accessible={false} />
@@ -148,7 +149,7 @@ export default function HomeScreen() {
        </View>
        {Platform.OS === 'web' && (
          <Pressable disabled={feed.loading || feed.refreshing} accessibilityRole="button"
-           onPress={() => void feed.loadNews(true)} style={s.refresh}>
+           onPress={refreshPageData} style={s.refresh}>
            <Text style={s.link}>{w.refresh}</Text>
          </Pressable>
        )}

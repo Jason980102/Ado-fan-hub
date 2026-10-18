@@ -1,8 +1,9 @@
+import { usePageData } from '@/hooks/use-page-data';
 import { useRoseMotion } from '@/contexts/rose-motion-context';
 import RoseScrollView from '@/components/rose-scroll-view';
 import { FanColors } from '@/constants/fan-theme';
 import { useWebLayout } from '@/hooks/use-web-layout';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import {
   ActivityIndicator, Image, Linking, Platform, Pressable,
   RefreshControl, StyleSheet, Text, View,
@@ -110,14 +111,14 @@ export default function AnalyticsScreen() {
     void load();
   }
 
-  useEffect(() => {
+  usePageData(useCallback(() => {
     void load();
     return () => {
       const active = request.current;
       request.current = null;
       active?.abort();
     };
-  }, [load]);
+  }, [load]));
 
   function number(value: number | null) {
     return value === null

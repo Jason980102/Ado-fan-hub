@@ -1,5 +1,6 @@
+import { usePageData } from '@/hooks/use-page-data';
 import { useRoseMotion } from '@/contexts/rose-motion-context';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { getNews, type NewsItem } from '@/services/news-api';
 
 type Mode = 'initial' | 'refresh' | 'more';
@@ -41,6 +42,7 @@ export function useNewsFeed() {
       appendFailed.current = false;
       setHasMore(canLoadMore.current);
       setMoreError(false);
+      setError(false);
       setItems((previous) => {
         const merged = mode === 'more' ? [...previous, ...result.items] : result.items;
         return [...new Map(merged.map((item) => [item.id, item])).values()];
@@ -63,14 +65,15 @@ export function useNewsFeed() {
     }
   }, [restartGrowth]);
 
-  useEffect(() => {
+  usePageData(useCallback(() => {
+    setRefreshing(true);
     void load('initial');
     return () => {
       const active = request.current;
       request.current = null;
       active?.abort();
     };
-  }, [load]);
+  }, [load]));
 
   const loadNews = useCallback((refresh = false) => {
     setLoading(!refresh);

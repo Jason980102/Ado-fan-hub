@@ -1,8 +1,9 @@
+import { usePageData } from '@/hooks/use-page-data';
 import { useRoseMotion } from '@/contexts/rose-motion-context';
 import RoseScrollView from '@/components/rose-scroll-view';
 import { FanColors } from '@/constants/fan-theme';
 import { useWebLayout } from '@/hooks/use-web-layout';
-import { useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import {
   ActivityIndicator, Linking, Platform, Pressable,
   RefreshControl, StyleSheet, Text,
@@ -26,13 +27,13 @@ export default function MvScreen() {
   const [linkError, setLinkError] = useState(false);
   const [version, setVersion] = useState(0);
 
-  useEffect(() => {
+  usePageData(useCallback(() => {
     const controller = new AbortController();
     let active = true;
     const timeout = setTimeout(() => controller.abort(), 45000);
-    void getMvCatalog(controller.signal)
+    if (version >= 0) void getMvCatalog(controller.signal)
       .then((result) => {
-        if (active && !controller.signal.aborted) setData(result);
+        if (active && !controller.signal.aborted) { setData(result); setError(false); }
       })
       .catch(() => {
         if (active) setError(true);
@@ -47,7 +48,7 @@ export default function MvScreen() {
       clearTimeout(timeout);
       controller.abort();
     };
-  }, [version]);
+  }, [version]));
 
   function refresh() {
     if (busy) return;

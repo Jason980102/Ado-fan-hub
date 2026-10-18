@@ -1,11 +1,11 @@
-﻿from threading import Lock
+from threading import Lock
 from time import monotonic
 
 from models import NewsCategory, NewsItem, NewsListResponse
 from news_sources.wordpress import fetch_official_news
 
 
-CACHE_TTL_SECONDS = 600
+CACHE_TTL_SECONDS = 60
 SOURCE_FETCH_LIMIT = 100
 
 _cached_items: list[NewsItem] | None = None

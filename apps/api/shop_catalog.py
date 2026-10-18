@@ -127,7 +127,7 @@ def cached(key, fetch):
             result = {**data, 'source': SOURCE, 'checked_at': datetime.now(timezone.utc).isoformat()}
             if key not in _cache and len(_cache) >= 128:
                 del _cache[next(iter(_cache))]
-            _cache[key] = {'value': result, 'expires': monotonic() + 600, 'stale': False}
+            _cache[key] = {'value': result, 'expires': monotonic() + (600 if isinstance(key, tuple) and key[0] == 'product-options' else 60), 'stale': False}
             return {**result, 'cached': False, 'stale': False}
         except Exception:
             if old:

@@ -47,7 +47,7 @@ def stock_snapshot():
                          'source': shop_catalog.SOURCE}
             # Nested caches must not turn a ten-minute source TTL into twenty.
             age = (datetime.now(timezone.utc) - oldest).total_seconds()
-            _expires = monotonic() + (60 if stale else max(1, min(600, 600 - age)))
+            _expires = monotonic() + (60 if stale else max(1, min(60, 60 - age)))
         except Exception:
             if _snapshot is None:
                 raise HTTPException(503, 'Current merchandise unavailable') from None

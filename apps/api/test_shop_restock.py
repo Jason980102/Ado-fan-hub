@@ -267,7 +267,7 @@ class RestockTests(unittest.TestCase):
         shop_stock._snapshot, shop_stock._expires = None, 0
         self.addCleanup(setattr, shop_stock, '_snapshot', None)
         self.addCleanup(setattr, shop_stock, '_expires', 0)
-        old = (datetime.now(timezone.utc) - timedelta(seconds=590)).isoformat()
+        old = (datetime.now(timezone.utc) - timedelta(seconds=50)).isoformat()
         with patch('shop_stock.monotonic', return_value=1000), \
              patch('shop_stock.shop_catalog.themes', return_value={'themes': [theme()], 'stale': False, 'checked_at': old}), \
              patch('shop_stock.shop_catalog.products', return_value={'theme': theme(), 'products': [product()], 'has_more': False, 'stale': False, 'checked_at': old}):

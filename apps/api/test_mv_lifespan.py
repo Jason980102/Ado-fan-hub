@@ -1,4 +1,4 @@
-﻿import asyncio
+import asyncio
 import unittest
 
 import main
@@ -51,7 +51,7 @@ class MVLifespanTests(unittest.TestCase):
                 self.assertEqual(
                     intervals,
                     {
-                        "feed": 300,
+                        "feed": 60,
                         "playlists": 900,
                         "uploads": 21600,
                     },

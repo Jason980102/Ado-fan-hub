@@ -1,5 +1,6 @@
+import { usePageData } from '@/hooks/use-page-data';
 import { getGrowth, type Growth, type Period } from '@/services/analytics-growth-api';
-import { useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { ActivityIndicator, Image, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { FanColors } from '@/constants/fan-theme';
@@ -46,7 +47,7 @@ export default function AnalyticsOverview({ data, onOpenVideo }: { data: Analyti
   const exact = (n: number | null) => n === null ? '—' : new Intl.NumberFormat(i18n.language).format(n);
   const color = (n: number | null) => n === null || n === 0 ? FanColors.muted : n > 0 ? '#69d9a3' : '#ff8d9b';
 
-  useEffect(() => {
+  usePageData(useCallback(() => {
     const controller = new AbortController();
     let active = true;
     const timer = setTimeout(() => controller.abort(), 20000);
@@ -59,7 +60,7 @@ export default function AnalyticsOverview({ data, onOpenVideo }: { data: Analyti
       finally { clearTimeout(timer); }
     })();
     return () => { active = false; clearTimeout(timer); controller.abort(); };
-  }, [data, retry]);
+  }, [data, retry]));
 
   function period(p: Period | null | undefined) {
     if (!p) return null;
