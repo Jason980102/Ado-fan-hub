@@ -39,8 +39,7 @@ export async function getShopProducts(theme: string, page: number, signal: Abort
   if (!identifier(theme)) throw new Error('Invalid theme');
   const result: ProductsResponse = await read(`themes/${encodeURIComponent(theme)}/products?page=${page}`, signal);
   if (!validTheme(result.theme) || result.theme.slug !== theme || result.page !== page || !Number.isSafeInteger(result.total) || result.total < 0 || typeof result.has_more !== 'boolean' || !Array.isArray(result.products) || result.products.length > 24 ||
-    !result.products.every(p => p && identifier(p.slug) && typeof p.title === 'string' && Number.isSafeInteger(p.price_jpy) && p.price_jpy >= 0 && ['available', 'ended', 'sold_out', 'upcoming', 'unknown'].includes(p.status) && Array.isArray(p.labels) && p.labels.every(l => typeof l === 'string') &&
-      (p.image_url === null || /^https:\/\/images\.groobee\.com\/images\/ado-officialshop\//.test(p.image_url)) && p.url === `https://ado-officialshop-friedpotato.com/products/${p.slug}`)) throw new Error('Invalid products');
+    !result.products.every(validProduct)) throw new Error('Invalid products');
   return result;
 }
 
@@ -206,4 +205,43 @@ export async function getShopVariation(
   }
 
   return result;
+}
+
+function validProduct(p: ShopProduct) { return p && identifier(p.slug) && typeof p.title === 'string' && Number.isSafeInteger(p.price_jpy) && p.price_jpy >= 0 && ['available', 'ended', 'sold_out', 'upcoming', 'unknown'].includes(p.status) && Array.isArray(p.labels) && p.labels.every(l => typeof l === 'string') &&
+      (p.image_url === null || /^https:\/\/images\.groobee\.com\/images\/ado-officialshop\//.test(p.image_url)) && p.url === `https://ado-officialshop-friedpotato.com/products/${p.slug}`; }
+
+export type SoldOutEntry = { theme: ShopTheme; product: ShopProduct };
+export type SoldOutResponse = Meta & { items: SoldOutEntry[]; total: number; page: number; has_more: boolean };
+
+export function isShopThemeActive(theme: ShopTheme, now = Date.now()): boolean {
+  return theme.campaign_status === 'active' && theme.wishlist_eligible
+    && (theme.campaign_ends_at === null || now < Date.parse(theme.campaign_ends_at));
+}
+
+export async function getSoldOutProducts(page: number, signal: AbortSignal): Promise<SoldOutResponse> {
+  if (!Number.isSafeInteger(page) || page < 1 || page > 200) throw new Error('Invalid page');
+  const result = await read(`sold-out?page=${page}`, signal);
+  if (result.page !== page || !Number.isSafeInteger(result.total) || result.total < 0
+    || typeof result.has_more !== 'boolean' || !Array.isArray(result.items) || result.items.length > 24
+    || !result.items.every((entry: SoldOutEntry) => entry && validTheme(entry.theme) && validProduct(entry.product)
+      && entry.product.status === 'sold_out' && isShopThemeActive(entry.theme))) throw new Error('Invalid sold-out products');
+  return result;
+}
+
+export type CampaignInfo = Pick<ShopTheme, 'slug' | 'campaign_status' | 'wishlist_eligible' | 'campaign_ends_at'>;
+export async function getCampaignStatuses(slugs: string[], signal: AbortSignal): Promise<CampaignInfo[]> {
+  if (slugs.length < 1 || slugs.length > 200 || !slugs.every(identifier) || new Set(slugs).size !== slugs.length) throw new Error('Invalid campaigns');
+  const base = process.env.EXPO_PUBLIC_API_URL || process.env.EXPO_PUBLIC_ANALYTICS_API_URL;
+  if (!base) throw new Error('API unavailable');
+  const response = await fetch(`${base.replace(/\/+$/, '')}/api/shop/campaign-status?slugs=${encodeURIComponent(slugs.join(','))}`, { signal });
+  if (!response.ok) throw new Error('Campaign status unavailable');
+  const result = await response.json();
+  if (!Array.isArray(result?.campaigns) || result.campaigns.length !== slugs.length
+    || new Set(result.campaigns.map((t: CampaignInfo) => t.slug)).size !== slugs.length
+    || !result.campaigns.every((t: CampaignInfo) => t && slugs.includes(t.slug)
+      && ['active', 'ended', 'unverified'].includes(t.campaign_status)
+      && typeof t.wishlist_eligible === 'boolean'
+      && (t.campaign_status === 'active') === t.wishlist_eligible
+      && (t.campaign_ends_at === null || (typeof t.campaign_ends_at === 'string' && Number.isFinite(Date.parse(t.campaign_ends_at)))))) throw new Error('Invalid campaign status');
+  return result.campaigns;
 }

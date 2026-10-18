@@ -1,5 +1,8 @@
+from shop_stock import router as shop_stock_router
+from shop_push import RestockWorker, router as shop_push_router
 from fx_rates import FxWorker, router as fx_rates_router
 from mv_catalog import router as mv_catalog_router
+from shop_catalog import router as shop_catalog_router
 from analytics_growth import router as analytics_growth_router
 from official_images import router as official_images_router
 from analytics import router as analytics_router
@@ -32,10 +35,13 @@ async def mv_lifespan(app):
     scheduler.start()
     fx_worker = FxWorker()
     fx_worker.start()
+    restock_worker = RestockWorker()
+    restock_worker.start()
 
     try:
         yield
     finally:
+        restock_worker.stop()
         fx_worker.stop()
         scheduler.stop()
         app.state.mv_sync = None
@@ -58,8 +64,8 @@ app.add_middleware(
         "http://192.168.4.27:8081",
         "http://192.168.4.27:8082",
     ],
-    allow_methods=["GET"],
-    allow_headers=["Accept", "Content-Type"],
+    allow_methods=["GET", "PUT", "DELETE"],
+    allow_headers=["Accept", "Content-Type", "Authorization"],
 )
 
 
@@ -98,6 +104,9 @@ app.include_router(fx_rates_router)
 app.include_router(analytics_router)
 app.include_router(analytics_growth_router)
 app.include_router(official_images_router)
+app.include_router(shop_catalog_router)
+app.include_router(shop_stock_router)
+app.include_router(shop_push_router)
 
 app.include_router(mv_catalog_router)
 

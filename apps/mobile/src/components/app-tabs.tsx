@@ -22,10 +22,12 @@ export default function AppTabs() {
     else router.replace('/');
   }
 
+  const shopLabel = language.startsWith('zh') ? '周邊'
+    : language.startsWith('ja') ? 'グッズ' : 'Shop';
   const pages = [
     { name: 'index', title: t('home'), icon: '⌂' },
-    { name: 'news', title: t('news'), icon: '▤' },
     { name: 'explore', title: exploreLabel, icon: '◈' },
+    { name: 'shop', title: shopLabel, icon: '▣' },
     { name: 'mv', title: 'MV', icon: '♫' },
     { name: 'settings', title: t('settings'), icon: '⚙' },
   ];
@@ -73,18 +75,40 @@ export default function AppTabs() {
           title: page.title,
           headerShown: page.name !== 'index',
           tabBarIcon: ({ color }) => (
+            page.name === 'shop' ? (
+              <Svg width={24} height={24} viewBox="0 0 24 24">
+                <Path
+                  d="M5 9h14l1 11H4L5 9Z"
+                  fill="none"
+                  stroke={color}
+                  strokeWidth={1.8}
+                  strokeLinejoin="round"
+                />
+                <Path
+                  d="M9 10V7a3 3 0 0 1 6 0v3"
+                  fill="none"
+                  stroke={color}
+                  strokeWidth={1.8}
+                  strokeLinecap="round"
+                />
+              </Svg>
+            ) : (
             <Text style={{
               color,
-              fontSize: page.name === 'news' || page.name === 'mv' ? 19 : 22,
+              fontSize: page.name === 'shop' || page.name === 'mv' ? 19 : 22,
               lineHeight: 24,
               textAlign: 'center',
               includeFontPadding: false,
             }}>{page.icon}</Text>
+            )
           ),
         }} />
       ))}
       <Tabs.Screen name="analytics" options={{ href: null, title: t('analytics:title') }} />
       <Tabs.Screen name="following" options={{ href: null, title: t('following') }} />
+      <Tabs.Screen name="news" options={{ href: null, title: t('news') }} />
+      <Tabs.Screen name="news-article" options={{ href: null, title: t('news') }} />
+      <Tabs.Screen name="wishlist" options={{ href: null, title: "Wishlist" }} />
       <Tabs.Screen name="about" options={{ href: null, title: hubCopy(i18n.resolvedLanguage || i18n.language).about }} />
     </Tabs>
   );

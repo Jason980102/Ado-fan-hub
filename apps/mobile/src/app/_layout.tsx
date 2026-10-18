@@ -1,3 +1,4 @@
+import RestockObserver from '@/components/restock-observer';
 import { RoseMotionProvider } from '@/contexts/rose-motion-context';
 import RoseBackground from '@/components/rose-background';
 import { FanColors } from '@/constants/fan-theme';
@@ -40,6 +41,7 @@ function AppContent() {
   return (
     <RoseMotionProvider>
       <View style={{ flex: 1, backgroundColor: FanColors.background }}>
+        <RestockObserver />
         <AppTabs />
         <RoseBackground />
       </View>

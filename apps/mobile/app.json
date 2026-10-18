@@ -33,7 +33,9 @@
           "imageWidth": 76
         }
       ],
-      "expo-localization"
+      "expo-localization",
+      "expo-secure-store",
+      "expo-notifications"
     ],
     "experiments": {
       "typedRoutes": true,

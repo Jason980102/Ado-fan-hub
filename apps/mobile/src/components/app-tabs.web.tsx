@@ -27,14 +27,17 @@ export default function AppTabs() {
           <TabTrigger name="analytics" href="/analytics" />
           <TabTrigger name="following" href="/following" />
           <TabTrigger name="about" href="/about" />
+          <TabTrigger name="news" href="/news" />
+          <TabTrigger name="news-article" href="/news-article" />
+          <TabTrigger name="wishlist" href="/wishlist" />
           <TabTrigger name="home" href="/" asChild>
             <TabButton>{t('home')}</TabButton>
           </TabTrigger>
-          <TabTrigger name="news" href="/news" asChild>
-            <TabButton>{t('news')}</TabButton>
-          </TabTrigger>
           <TabTrigger name="explore" href="/explore" asChild>
             <TabButton>{i18n.language.startsWith('zh') ? '探索' : i18n.language.startsWith('ja') ? '探索' : 'Explore'}</TabButton>
+          </TabTrigger>
+          <TabTrigger name="shop" href="/shop" asChild>
+            <TabButton>{i18n.language.startsWith('zh') ? '周邊' : i18n.language.startsWith('ja') ? 'グッズ' : 'Shop'}</TabButton>
           </TabTrigger>
           <TabTrigger name="mv" href="/mv" asChild>
             <TabButton>MV</TabButton>

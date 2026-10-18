@@ -32,3 +32,8 @@ Thumbs.db
 
 # Shared reference rate runtime database
 apps/api/data/fx.sqlite3*
+
+# Shop runtime state and local notification credentials
+apps/api/data/shop-state.sqlite3*
+google-services.json
+GoogleService-Info.plist

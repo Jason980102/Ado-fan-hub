@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import type { ShopProduct, ShopTheme } from './shop-api';
+import { getCampaignStatuses, isShopThemeActive, type ShopProduct, type ShopTheme, type CampaignInfo } from './shop-api';
 
 const STORAGE_KEY = '@ado-fan-hub/wishlist/v1';
 
@@ -18,6 +18,8 @@ export type WishlistItem = {
   selectedOptions: Record<string, string>;
   notifyWhenAvailable: boolean;
   addedAt: string;
+  campaignStatus?: ShopTheme['campaign_status'];
+  campaignEndsAt?: string | null;
 };
 
 function makeId(
@@ -66,6 +68,8 @@ export async function addToWishlist(
   officialUpperLimit: number | null = null,
   officialProductUpperLimit: number | null = null,
 ): Promise<WishlistItem[]> {
+  return mutateWishlist(async () => {
+  if (!isShopThemeActive(theme)) throw new Error('Campaign not available for wishlist');
   validateQuantity(quantity);
 
   for (const limit of [officialUpperLimit, officialProductUpperLimit]) {
@@ -122,6 +126,8 @@ export async function addToWishlist(
 
   if (existing) {
     existing.quantity = nextQuantity;
+    existing.campaignStatus = theme.campaign_status;
+    existing.campaignEndsAt = theme.campaign_ends_at;
     existing.officialUpperLimit = optionLimit;
     existing.officialProductUpperLimit = productLimit;
   } else {
@@ -139,6 +145,8 @@ export async function addToWishlist(
       selectedOptions: { ...selectedOptions },
       notifyWhenAvailable: false,
       addedAt: new Date().toISOString(),
+      campaignStatus: theme.campaign_status,
+      campaignEndsAt: theme.campaign_ends_at,
     });
   }
 
@@ -152,12 +160,14 @@ export async function addToWishlist(
 
   await saveWishlist(items);
   return items;
+  });
 }
 
 export async function updateWishlistQuantity(
   id: string,
   quantity: number,
 ): Promise<WishlistItem[]> {
+  return mutateWishlist(async () => {
   validateQuantity(quantity);
 
   const items = await loadWishlist();
@@ -204,22 +214,26 @@ export async function updateWishlistQuantity(
   await saveWishlist(items);
 
   return items;
+  });
 }
 
 export async function removeFromWishlist(
   id: string,
 ): Promise<WishlistItem[]> {
+  return mutateWishlist(async () => {
   const items = await loadWishlist();
   const updated = items.filter(item => item.id !== id);
 
   await saveWishlist(updated);
   return updated;
+  });
 }
 
 export async function updateWishlistNotification(
   id: string,
   enabled: boolean,
 ): Promise<WishlistItem[]> {
+  return mutateWishlist(async () => {
   const items = await loadWishlist();
   const item = items.find(entry => entry.id === id);
 
@@ -231,6 +245,7 @@ export async function updateWishlistNotification(
   await saveWishlist(items);
 
   return items;
+  });
 }
 
 
@@ -283,4 +298,45 @@ export function calculateWishlistSubtotal(
     (total, item) => total + item.priceJpy * item.quantity,
     0,
   );
+}
+
+let mutationQueue: Promise<void> = Promise.resolve();
+function mutateWishlist<T>(action: () => Promise<T>): Promise<T> {
+  const result = mutationQueue.then(action, action);
+  mutationQueue = result.then(() => {}, () => {});
+  return result;
+}
+
+export function getWishlistCampaignStatus(item: WishlistItem, now = Date.now()): 'active' | 'ended' | 'unverified' {
+  if (item.campaignStatus === 'ended'
+    || (item.campaignEndsAt && Number.isFinite(Date.parse(item.campaignEndsAt)) && now >= Date.parse(item.campaignEndsAt))) return 'ended';
+  return item.campaignStatus ?? 'unverified';
+}
+
+export async function refreshWishlistCampaigns(signal: AbortSignal): Promise<WishlistItem[]> {
+  const saved = await loadWishlist();
+  const slugs = [...new Set(saved.map(item => item.themeSlug))];
+  const campaigns = new Map<string, CampaignInfo>();
+  try {
+    for (let i = 0; i < slugs.length; i += 200) {
+      for (const info of await getCampaignStatuses(slugs.slice(i, i + 200), signal)) campaigns.set(info.slug, info);
+    }
+  } catch { /* Saved deadlines still apply while offline; unknown is never inferred as ended. */ }
+  if (signal.aborted) return loadWishlist();
+  return mutateWishlist(async () => {
+    // Reload after network I/O so quantity edits/additions/removals are preserved.
+    const latest = await loadWishlist();
+    const updated = latest.map(item => {
+      const info = campaigns.get(item.themeSlug);
+      const next = info && info.campaign_status !== 'unverified'
+        ? { ...item, campaignStatus: info.campaign_status, campaignEndsAt: info.campaign_ends_at } : { ...item };
+      if (getWishlistCampaignStatus(item) === 'ended' || getWishlistCampaignStatus(next) === 'ended') {
+        next.campaignStatus = 'ended';
+        next.notifyWhenAvailable = false;
+      }
+      return next;
+    });
+    if (JSON.stringify(latest) !== JSON.stringify(updated)) await saveWishlist(updated);
+    return updated;
+  });
 }
