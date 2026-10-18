@@ -14,6 +14,7 @@ import '@/localization/analytics-i18n';
 import { usePreferences } from '@/contexts/preferences-context';
 import {
   getAnalytics,
+  rankMvVideos,
   getChannelAvatarUrl,
   getChannelHistory,
   type AnalyticsResponse,
@@ -160,16 +161,7 @@ export default function AnalyticsScreen() {
     }
   }
 
-  const rankedVideos = (data?.videos ?? [])
-    .filter((video) =>
-      ranking === 'all' || video.categories.includes(ranking)
-    )
-    .filter((video) => video.view_count !== null)
-    .sort((a, b) =>
-      (b.view_count ?? 0) - (a.view_count ?? 0) ||
-      a.id.localeCompare(b.id)
-    )
-    .slice(0, 10);
+  const rankedVideos = rankMvVideos(data?.videos ?? [], ranking);
 
   return (
     <SafeAreaView style={styles.container} edges={Platform.OS === 'web' ? ['top'] : ['left', 'right']}>

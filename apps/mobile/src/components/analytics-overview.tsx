@@ -1,3 +1,4 @@
+import { getGrowth, type Growth, type Period } from '@/services/analytics-growth-api';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Image, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
@@ -5,14 +6,6 @@ import { FanColors } from '@/constants/fan-theme';
 import { usePreferences } from '@/contexts/preferences-context';
 import type { AnalyticsResponse } from '@/services/analytics-api';
 
-type Period = { from: string; to: string; partial: boolean };
-type Growth = {
-  channel_id: string;
-  channel: (Period & { changes: { subscriber_count: number | null; view_count: number | null; video_count: number | null } }) | null;
-  mv_period: Period | null;
-  videos: { id: string; title: string; thumbnail_url: string | null; view_count: number; delta: number }[];
-  excluded: number;
-};
 const words = {
   zh: { subs: '訂閱人數', views: '頻道總觀看數', videos: '公開影片數', week: '最近 7 天重點', subChange: '訂閱增減', viewChange: '觀看增減', videoChange: '影片增減', rank: 'MV 觀看增長排行', more: '進階數據', partial: '尚未累積滿 7 天，以下為已記錄期間的增減。', waiting: '尚需至少兩次有效快照才能比較；資料會隨後續更新累積。', error: '暫時無法載入增長分析', retry: '重試', approx: '約 ', excluded: '缺少比較資料的 MV 不列入排行。', total: '總觀看', same: '無變化', scope: '依官方原唱與 Cover 播放清單，比較同一時段的觀看增量。', rounded: '訂閱數為 YouTube 公開約數，增減也是約數。' },
   en: { subs: 'Subscribers', views: 'Channel views', videos: 'Public videos', week: 'Last 7 days', subChange: 'Subscriber change', viewChange: 'View change', videoChange: 'Video change', rank: 'MV view growth', more: 'Advanced data', partial: 'Less than 7 days recorded. Changes cover the recorded period below.', waiting: 'At least two valid snapshots are needed. History accumulates with future updates.', error: 'Growth analysis is temporarily unavailable', retry: 'Retry', approx: '≈ ', excluded: 'MVs without comparable observations are excluded.', total: 'Total views', same: 'No change', scope: 'View gains across the same period for official original and cover playlists.', rounded: 'Public subscriber counts and their changes are approximate.' },
@@ -32,18 +25,6 @@ export function compactNumber(value: number | null, signed = false) {
   const suffix = unit === 1e9 ? 'B' : unit === 1e6 ? 'M' : unit === 1e3 ? 'K' : '';
   const rounded = unit === 1 ? String(abs) : (abs / unit).toFixed(2).replace(/\.?0+$/, '');
   return `${value < 0 ? '−' : signed && value > 0 ? '+' : ''}${rounded}${suffix}`;
-}
-
-function validGrowth(value: Growth) {
-  const period = (p: Period) => p && typeof p.partial === 'boolean' && Number.isFinite(Date.parse(p.from)) && Number.isFinite(Date.parse(p.to)) && Date.parse(p.from) <= Date.parse(p.to);
-  const count = (v: unknown) => typeof v === 'number' && Number.isSafeInteger(v);
-  return value && typeof value.channel_id === 'string' &&
-    (value.channel === null || (period(value.channel) && ['subscriber_count', 'view_count', 'video_count'].every(k => {
-      const v = value.channel!.changes[k as keyof NonNullable<Growth['channel']>['changes']];
-      return v === null || count(v);
-    }))) && (value.mv_period === null || period(value.mv_period)) && Array.isArray(value.videos) && value.videos.length <= 10 &&
-    value.videos.every(v => /^[A-Za-z0-9_-]{11}$/.test(v.id) && typeof v.title === 'string' && count(v.delta) && count(v.view_count) && v.view_count >= 0 &&
-      (v.thumbnail_url === null || /^https:\/\/i\.ytimg\.com\//.test(v.thumbnail_url)));
 }
 
 export default function AnalyticsOverview({ data, onOpenVideo }: { data: AnalyticsResponse; onOpenVideo: (id: string) => void }) {
@@ -69,14 +50,10 @@ export default function AnalyticsOverview({ data, onOpenVideo }: { data: Analyti
     const controller = new AbortController();
     let active = true;
     const timer = setTimeout(() => controller.abort(), 20000);
-    const base = process.env.EXPO_PUBLIC_ANALYTICS_API_URL || process.env.EXPO_PUBLIC_API_URL;
     void (async () => {
       try {
-        if (!base) throw new Error('Missing API');
-        const response = await fetch(`${base.replace(/\/+$/, '')}/api/analytics/youtube/growth`, { signal: controller.signal });
-        if (!response.ok) throw new Error('Growth unavailable');
-        const result: Growth = await response.json();
-        if (!validGrowth(result) || result.channel_id !== data.channel.id) throw new Error('Invalid growth');
+        const result = await getGrowth(controller.signal);
+        if (result.channel_id !== data.channel.id) throw new Error('Invalid growth');
         if (active) setResult({ data, attempt: retry, growth: result, error: false });
       } catch { if (active) setResult({ data, attempt: retry, growth: null, error: true }); }
       finally { clearTimeout(timer); }

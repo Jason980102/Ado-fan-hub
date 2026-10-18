@@ -1,6 +1,7 @@
+import HomeMvRankings from '@/components/home-mv-rankings';
 import { HeroGeometry, MotionShortcut } from '@/components/home-motion';
 import { useState } from 'react';
-import { ActivityIndicator, Image, Linking, Platform, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Image, Platform, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -21,7 +22,6 @@ export default function HomeScreen() {
   const feed = useNewsFeed();
   const [gridWidth, setGridWidth] = useState(0);
   const [heroSize, setHeroSize] = useState({ width: 0, height: 0 });
-  const [linkError, setLinkError] = useState(false);
   const columns = Platform.OS === 'web' ? (gridWidth >= 960 ? 4 : gridWidth >= 280 ? 2 : 1) : 2;
   const shortcuts = [
     { title: w.news, note: w.newsNote, icon: 'video', route: '/news' },
@@ -33,19 +33,23 @@ export default function HomeScreen() {
     if (!Number.isFinite(Date.parse(value))) return '';
     return new Intl.DateTimeFormat(i18n.language, { month: 'short', day: 'numeric', timeZone: preferences.timeZone }).format(new Date(value));
   }
-  async function open(url: string) {
-    setLinkError(false);
-    try {
-      if (!/^https:\/\//i.test(url)) throw new Error('Invalid URL');
-      await Linking.openURL(url);
-    } catch { setLinkError(true); }
+  function openNewsArticle(item: (typeof feed.items)[number]) {
+    router.push({
+      pathname: '/news-article',
+      params: {
+        title: item.title,
+        published_at: item.published_at,
+        source_name: item.source_name,
+        source_url: item.source_url,
+        image_url: item.image_url ?? '',
+      },
+    });
   }
   return <SafeAreaView style={s.screen} edges={Platform.OS === 'web' ? ['top'] : ['top', 'left', 'right']}>
     <RoseScrollView contentContainerStyle={[s.content, layout.contentStyle, Platform.OS === 'web' && { maxWidth: 1120 }]}
       showsVerticalScrollIndicator={false}
       refreshControl={Platform.OS !== 'web' ? <RefreshControl refreshing={feed.refreshing} onRefresh={() => void feed.loadNews(true)} tintColor={C.accent} colors={[C.accent]} /> : undefined}>
       <View style={s.brandCopy}>
-        <Text style={s.eyebrow}>{w.eyebrow}</Text>
         <View style={s.brand}>
           <Image source={require('../../assets/images/blue-rose-icon.png')} resizeMode="contain" style={s.rose} accessible={false} />
           <Text style={[s.title, { flex: 1 }]}>Ado Fan Hub</Text>
@@ -64,7 +68,31 @@ export default function HomeScreen() {
           accessible={false} />
         <View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(3,9,22,0.58)' }]} />
         <HeroGeometry />
-        <View style={[s.heroCopy, layout.wide && { flex: 1 }]}><Text style={[s.eyebrow, s.heroEyebrow]}>Discover Ado</Text><Text style={s.heroTitle}>{w.hero}</Text><Text style={[s.body, s.heroBody]}>{w.intro}</Text></View>
+        <View style={[s.heroCopy, layout.wide && { flex: 1 }]}>
+          <Text style={[s.eyebrow, s.heroEyebrow]}>ADO NOW</Text>
+          <Text style={s.heroTitle}>{w.nowTitle}</Text>
+          <Text style={[s.body, s.heroBody]}>{w.nowIntro}</Text>
+          <View style={s.heroNews}>
+            {feed.loading ? (
+              <ActivityIndicator color={C.accent} />
+            ) : feed.error ? (
+              <Text style={s.heroBody}>{w.error}</Text>
+            ) : feed.items.length === 0 ? (
+              <Text style={s.heroBody}>{w.empty}</Text>
+            ) : feed.items.slice(0, 3).map(item => (
+              <Pressable key={item.id} accessibilityRole="button"
+                onPress={() => openNewsArticle(item)}
+                style={({ pressed }) => [s.heroNewsItem, pressed && s.pressed]}>
+                <Text style={s.heroNewsMeta}>{date(item.published_at)} · {item.source_name}</Text>
+                <Text style={s.heroNewsTitle} numberOfLines={2}>{item.title}</Text>
+              </Pressable>
+            ))}
+          </View>
+          <Pressable accessibilityRole="button" onPress={() => router.push('/news')}
+            style={s.heroAll}>
+            <Text style={s.heroLink}>{w.all} →</Text>
+          </Pressable>
+        </View>
         <View style={s.actions}>
           <Pressable accessibilityRole="button" onPress={() => router.push('/about')} style={({ pressed }) => [s.primary, pressed && s.pressed]}><Text style={s.primaryText}>{w.about} →</Text></Pressable>
           <Pressable accessibilityRole="button" onPress={() => router.push('/mv')} style={({ pressed }) => [s.secondary, pressed && s.pressed]}><Text style={s.link}>{w.listen} →</Text></Pressable>
@@ -83,21 +111,51 @@ export default function HomeScreen() {
           </View>
         ))}
       </View>
-      <View style={s.sectionHeader}><Text style={s.heading}>{w.news}</Text><Pressable accessibilityRole="button" onPress={() => router.push('/news')} style={s.textButton}><Text style={s.link}>{w.all} →</Text></Pressable></View>
-      {Platform.OS === 'web' && <Pressable disabled={feed.loading || feed.refreshing} accessibilityRole="button" onPress={() => void feed.loadNews(true)} style={s.refresh}><Text style={s.link}>{w.refresh}</Text></Pressable>}
-      {feed.loading && <ActivityIndicator color={C.accent} />}
-      {feed.error && <View style={s.newsCard}><Text accessibilityRole="alert" style={s.body}>{w.error}</Text><Pressable accessibilityRole="button" onPress={() => void feed.loadNews()} style={s.textButton}><Text style={s.link}>{w.retry}</Text></Pressable></View>}
-      {!feed.loading && !feed.error && feed.items.length === 0 && <Text style={s.body}>{w.empty}</Text>}
-      {feed.items.slice(0, 3).map(item => <Pressable accessibilityRole="link" key={item.id} onPress={() => void open(item.source_url)} style={({ pressed }) => [s.newsCard, pressed && s.pressed]}>
-        <View style={s.newsRow}>
-          <View style={s.newsCopy}><Text style={s.newsMeta}>{date(item.published_at)} · {item.source_name}</Text><Text style={s.newsTitle} numberOfLines={3}>{item.title}</Text><Text style={s.link}>↗ {item.source_name}</Text></View>
-          {item.image_url && /^https:\/\//i.test(item.image_url) && !feed.failedImages.includes(item.id) && <Image source={{ uri: item.image_url }} resizeMode="cover" style={s.thumbnail} onError={() => feed.setFailedImages(ids => [...ids, item.id])} />}
-        </View>
-      </Pressable>)}
-      {linkError && <Text accessibilityRole="alert" style={s.body}>{w.linkError}</Text>}
+      <HomeMvRankings />
       <Pressable accessibilityRole="button" onPress={() => router.push('/about')} style={({ pressed }) => [s.aboutCard, pressed && s.pressed]}>
         <Text style={s.eyebrow}>BEHIND THE MUSIC</Text><Text style={s.heading}>{w.about} →</Text><Text style={s.body}>{w.aboutNote}</Text>
       </Pressable>
+       <View style={s.sectionHeader}>
+         <Text style={s.heading}>{w.news}</Text>
+         <Pressable accessibilityRole="button" onPress={() => router.push('/news')} style={s.textButton}>
+           <Text style={s.link}>{w.all} →</Text>
+         </Pressable>
+       </View>
+       {Platform.OS === 'web' && (
+         <Pressable disabled={feed.loading || feed.refreshing} accessibilityRole="button"
+           onPress={() => void feed.loadNews(true)} style={s.refresh}>
+           <Text style={s.link}>{w.refresh}</Text>
+         </Pressable>
+       )}
+       {feed.loading && <ActivityIndicator color={C.accent} />}
+       {feed.error && <View style={s.newsCard}>
+         <Text accessibilityRole="alert" style={s.body}>{w.error}</Text>
+         <Pressable accessibilityRole="button" onPress={() => void feed.loadNews()} style={s.textButton}>
+           <Text style={s.link}>{w.retry}</Text>
+         </Pressable>
+       </View>}
+       {!feed.loading && !feed.error && feed.items.length === 0 && <Text style={s.body}>{w.empty}</Text>}
+       {feed.items.slice(0, 10).map(item => (
+         <Pressable accessibilityRole="button" key={item.id}
+           onPress={() => openNewsArticle(item)}
+           style={({ pressed }) => [s.newsCard, pressed && s.pressed]}>
+           <View style={s.newsRow}>
+             <View style={s.newsCopy}>
+               <Text style={s.newsMeta}>{date(item.published_at)} · {item.source_name}</Text>
+               <Text style={s.newsTitle} numberOfLines={3}>{item.title}</Text>
+               <Text style={s.link}>{w.news} →</Text>
+             </View>
+             {item.image_url && /^https:\/\//i.test(item.image_url) && !feed.failedImages.includes(item.id) && (
+               <Image source={{ uri: item.image_url }} resizeMode="cover"
+                 style={s.thumbnail}
+                 onError={() => feed.setFailedImages(ids => ids.includes(item.id) ? ids : [...ids, item.id])} />
+             )}
+           </View>
+         </Pressable>
+       ))}
+       <Pressable accessibilityRole="button" onPress={() => router.push('/news')} style={s.bottomAll}>
+         <Text style={s.link}>{w.all} →</Text>
+       </Pressable>
       <Text style={s.footer}>{w.footer}</Text>
     </RoseScrollView>
   </SafeAreaView>;
@@ -105,6 +163,13 @@ export default function HomeScreen() {
 const s = StyleSheet.create({
   heroEyebrow: { color: '#b9d7ff', letterSpacing: 0.8 },
   heroBody: { color: '#e0e9f7' },
+  heroNews: { gap: 8 },
+  heroNewsItem: { borderRadius: 12, paddingVertical: 8, paddingHorizontal: 10, backgroundColor: 'rgba(5, 15, 35, 0.73)', gap: 3 },
+  heroNewsMeta: { color: '#c0d8fa', fontSize: 11 },
+  heroNewsTitle: { color: '#ffffff', fontSize: 14, lineHeight: 19, fontWeight: '600' },
+  heroAll: { alignSelf: 'flex-start', paddingVertical: 6 },
+  heroLink: { color: '#c8e5ff', fontWeight: '700', fontSize: 13 },
+  bottomAll: { alignSelf: 'center', padding: 12 },
   screen: { flex: 1, backgroundColor: C.background }, content: { width: '100%', maxWidth: 850, alignSelf: 'center', paddingHorizontal: 20, paddingTop: Platform.OS === 'web' ? 110 : 24, paddingBottom: 110, gap: 18 },
   brand: { flexDirection: 'row', alignItems: 'center', gap: 12 }, brandCopy: { gap: 10 }, rose: { width: 44, height: 44 },
   title: { color: C.text, fontSize: 30, fontWeight: '800' }, eyebrow: { color: C.accent, fontWeight: '700', fontSize: 11, letterSpacing: 1.6 },

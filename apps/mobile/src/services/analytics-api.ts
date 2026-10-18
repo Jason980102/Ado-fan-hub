@@ -163,3 +163,14 @@ export async function getChannelHistory(
 
   return data;
 }
+// Shared by Analytics and its home preview: same scope, null handling and tie-break.
+export function rankMvVideos(
+  videos: AnalyticsResponse['videos'],
+  category: 'all' | 'original' | 'cover' = 'all',
+) {
+  return videos
+    .filter(video => category === 'all' || video.categories.includes(category))
+    .filter(video => video.view_count !== null)
+    .sort((a, b) => (b.view_count ?? 0) - (a.view_count ?? 0) || a.id.localeCompare(b.id))
+    .slice(0, 10);
+}
