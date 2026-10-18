@@ -3,6 +3,12 @@ from analytics_growth import router as analytics_growth_router
 from official_images import router as official_images_router
 from analytics import router as analytics_router
 from typing import Annotated
+from contextlib import asynccontextmanager
+
+from mv_sync import MVSyncScheduler
+from mv_incremental import sync_recent_feed
+from mv_playlists import sync_official_playlists
+from mv_uploads import sync_full_uploads
 
 from fastapi import FastAPI, HTTPException, Query
 
@@ -10,10 +16,32 @@ from models import NewsCategory, NewsListResponse
 from services.news_service import list_cached_news
 from fastapi.middleware.cors import CORSMiddleware
 
+@asynccontextmanager
+async def mv_lifespan(app):
+    scheduler = MVSyncScheduler(
+        {
+            "feed": (300, sync_recent_feed),
+            "playlists": (900, sync_official_playlists),
+            "uploads": (21600, sync_full_uploads),
+        },
+        start_delayed=True,
+    )
+
+    app.state.mv_sync = scheduler
+    scheduler.start()
+
+    try:
+        yield
+    finally:
+        scheduler.stop()
+        app.state.mv_sync = None
+
+
 app = FastAPI(
     title="Ado Fan Hub API",
     version="0.2.0",
     description="Backend API for the unofficial Ado Fan Hub.",
+    lifespan=mv_lifespan,
 )
 
 app.add_middleware(
@@ -67,3 +95,13 @@ app.include_router(analytics_growth_router)
 app.include_router(official_images_router)
 
 app.include_router(mv_catalog_router)
+
+
+@app.get("/api/mv/sync-status", tags=["MV catalog"])
+def mv_sync_status():
+    scheduler = getattr(app.state, "mv_sync", None)
+
+    if scheduler is None:
+        return {"running": False, "jobs": {}}
+
+    return scheduler.status()
