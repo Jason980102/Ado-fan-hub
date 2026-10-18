@@ -1,3 +1,6 @@
+import { compactNumber } from '@/components/analytics-overview';
+import { useHomeRanking } from '@/hooks/use-home-ranking';
+import { getAnalytics } from '@/services/analytics-api';
 import HomeMvRankings from '@/components/home-mv-rankings';
 import { HeroGeometry, MotionShortcut } from '@/components/home-motion';
 import { useState } from 'react';
@@ -15,6 +18,12 @@ import { hubCopy } from '@/localization/hub-copy';
 
 export default function HomeScreen() {
   const { i18n } = useTranslation();
+  const { t } = useTranslation('analytics');
+  const totals = useHomeRanking(getAnalytics);
+  const channel = totals.current?.data?.channel;
+  const subscribers = channel?.subscriber_count;
+  const subscriberCount = subscribers == null ? t('unknown')
+    : compactNumber(subscribers);
   const w = hubCopy(i18n.resolvedLanguage || i18n.language);
   const router = useRouter();
   const layout = useWebLayout();
@@ -45,6 +54,16 @@ export default function HomeScreen() {
       },
     });
   }
+  const subscriberBadge = (
+            <View style={[s.subscriberBadge, Platform.OS === 'web' && s.subscriberBadgeWeb]}>
+              <Text style={s.subscriberLabel} numberOfLines={1} adjustsFontSizeToFit>YouTube · {t('subscribers')}</Text>
+              {!totals.current ? <ActivityIndicator color={C.accent} accessibilityLabel={t('loading')} />
+                : totals.current.error ? <Pressable accessibilityRole="button" accessibilityLabel={`${t('error')} ${t('retry')}`} onPress={totals.retry} style={s.subscriberRetry}>
+                    <Text accessibilityRole="alert" style={s.subscriberValue}>{t('unknown')} · {t('retry')}</Text>
+                  </Pressable>
+                : <Text style={s.subscriberValue} numberOfLines={1} adjustsFontSizeToFit>{subscriberCount}</Text>}
+            </View>
+  );
   return <SafeAreaView style={s.screen} edges={Platform.OS === 'web' ? ['top'] : ['top', 'left', 'right']}>
     <RoseScrollView contentContainerStyle={[s.content, layout.contentStyle, Platform.OS === 'web' && { maxWidth: 1120 }]}
       showsVerticalScrollIndicator={false}
@@ -70,7 +89,10 @@ export default function HomeScreen() {
         <HeroGeometry />
         <View style={[s.heroCopy, layout.wide && { flex: 1 }]}>
           <Text style={[s.eyebrow, s.heroEyebrow]}>ADO NOW</Text>
-          <Text style={s.heroTitle}>{w.nowTitle}</Text>
+          <View style={s.heroTitleRow}>
+            <Text style={[s.heroTitle, s.heroTitleText]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.5}>{w.nowTitle}</Text>
+            {Platform.OS !== 'web' && subscriberBadge}
+          </View>
           <Text style={[s.body, s.heroBody]}>{w.nowIntro}</Text>
           <View style={s.heroNews}>
             {feed.loading ? (
@@ -93,9 +115,12 @@ export default function HomeScreen() {
             <Text style={s.heroLink}>{w.all} →</Text>
           </Pressable>
         </View>
+        <View style={Platform.OS === 'web' ? s.heroActionColumn : undefined}>
         <View style={s.actions}>
           <Pressable accessibilityRole="button" onPress={() => router.push('/about')} style={({ pressed }) => [s.primary, pressed && s.pressed]}><Text style={s.primaryText}>{w.about} →</Text></Pressable>
           <Pressable accessibilityRole="button" onPress={() => router.push('/mv')} style={({ pressed }) => [s.secondary, pressed && s.pressed]}><Text style={s.link}>{w.listen} →</Text></Pressable>
+        </View>
+          {Platform.OS === 'web' && subscriberBadge}
         </View>
       </View>
       <Text style={s.heading}>{w.shortcuts}</Text>
@@ -111,7 +136,7 @@ export default function HomeScreen() {
           </View>
         ))}
       </View>
-      <HomeMvRankings />
+      <HomeMvRankings totals={totals} />
       <Pressable accessibilityRole="button" onPress={() => router.push('/about')} style={({ pressed }) => [s.aboutCard, pressed && s.pressed]}>
         <Text style={s.eyebrow}>BEHIND THE MUSIC</Text><Text style={s.heading}>{w.about} →</Text><Text style={s.body}>{w.aboutNote}</Text>
       </Pressable>
@@ -161,6 +186,14 @@ export default function HomeScreen() {
   </SafeAreaView>;
 }
 const s = StyleSheet.create({
+  heroActionColumn: { gap: 16, alignItems: 'flex-start', maxWidth: '100%' },
+  subscriberBadgeWeb: { maxWidth: '100%', alignSelf: 'flex-start' },
+  heroTitleRow: { flexDirection: 'row', flexWrap: 'nowrap', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
+  heroTitleText: { flex: 1, minWidth: 0 },
+  subscriberBadge: { borderWidth: 1, borderColor: '#7fb8f0', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 8, backgroundColor: 'rgba(5,15,35,0.78)', gap: 4, maxWidth: '46%', flexShrink: 1 },
+  subscriberLabel: { color: '#c0d8fa', fontSize: 11, lineHeight: 16 },
+  subscriberValue: { color: '#ffffff', fontSize: 17, lineHeight: 23, fontWeight: '700' },
+  subscriberRetry: { paddingVertical: 4 },
   heroEyebrow: { color: '#b9d7ff', letterSpacing: 0.8 },
   heroBody: { color: '#e0e9f7' },
   heroNews: { gap: 8 },

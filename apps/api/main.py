@@ -1,3 +1,4 @@
+from mv_catalog import router as mv_catalog_router
 from analytics_growth import router as analytics_growth_router
 from official_images import router as official_images_router
 from analytics import router as analytics_router
@@ -64,3 +65,5 @@ def list_news(
 app.include_router(analytics_router)
 app.include_router(analytics_growth_router)
 app.include_router(official_images_router)
+
+app.include_router(mv_catalog_router)

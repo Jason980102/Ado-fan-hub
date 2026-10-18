@@ -2,8 +2,18 @@ import { forwardRef, useState } from 'react';
 import { Platform, ScrollView, type ScrollViewProps } from 'react-native';
 import MobileRoseFrame from '@/components/mobile-rose-frame';
 
-const RoseScrollView = forwardRef<ScrollView, ScrollViewProps>(
-  function RoseScrollView({ children, contentContainerStyle, onLayout, ...props }, ref) {
+type RoseScrollViewProps = ScrollViewProps & {
+  showMobileRoseFrame?: boolean;
+};
+
+const RoseScrollView = forwardRef<ScrollView, RoseScrollViewProps>(
+  function RoseScrollView({
+    children,
+    contentContainerStyle,
+    onLayout,
+    showMobileRoseFrame = true,
+    ...props
+  }, ref) {
     const [viewportHeight, setViewportHeight] = useState(0);
     return (
       <ScrollView {...props} ref={ref}
@@ -19,7 +29,7 @@ const RoseScrollView = forwardRef<ScrollView, ScrollViewProps>(
           contentContainerStyle,
           { position: 'relative' },
         ]}>
-        <MobileRoseFrame />
+        {showMobileRoseFrame && <MobileRoseFrame />}
         {children}
       </ScrollView>
     );

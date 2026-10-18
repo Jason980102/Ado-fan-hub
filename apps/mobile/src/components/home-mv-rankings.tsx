@@ -1,37 +1,19 @@
-import { useEffect, useState } from 'react';
+import { useHomeRanking, type Result } from '@/hooks/use-home-ranking';
+import { useState } from 'react';
 import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { FanColors as C } from '@/constants/fan-theme';
 import { usePreferences } from '@/contexts/preferences-context';
 import { useDashboardWords } from '@/components/analytics-overview';
-import { getAnalytics, rankMvVideos, type AnalyticsResponse } from '@/services/analytics-api';
+import { rankMvVideos, type AnalyticsResponse } from '@/services/analytics-api';
 import { getGrowth, type Growth } from '@/services/analytics-growth-api';
 import '@/localization/analytics-i18n';
 
-type Result<T> = { attempt: number; data: T | null; error: boolean };
-
-// Each endpoint settles independently; a failed growth request cannot hide total views.
-function useRanking<T>(load: (signal: AbortSignal) => Promise<T>) {
-  const [attempt, setAttempt] = useState(0);
-  const [result, setResult] = useState<Result<T> | null>(null);
-  useEffect(() => {
-    const controller = new AbortController();
-    let active = true;
-    const timer = setTimeout(() => controller.abort(), 20000);
-    void load(controller.signal).then(data => {
-      if (active) setResult({ attempt, data, error: false });
-    }).catch(() => {
-      if (active) setResult({ attempt, data: null, error: true });
-    }).finally(() => clearTimeout(timer));
-    return () => { active = false; clearTimeout(timer); controller.abort(); };
-  }, [attempt, load]);
-  return { current: result?.attempt === attempt ? result : null, retry: () => setAttempt(n => n + 1) };
-}
-
-export default function HomeMvRankings() {
-  const growth = useRanking<Growth>(getGrowth);
-  const totals = useRanking<AnalyticsResponse>(getAnalytics);
+export default function HomeMvRankings({ totals }: {
+  totals: { current: Result<AnalyticsResponse> | null; retry: () => void };
+}) {
+  const growth = useHomeRanking<Growth>(getGrowth);
   const { t, i18n } = useTranslation('analytics');
   const w = useDashboardWords();
   const router = useRouter();

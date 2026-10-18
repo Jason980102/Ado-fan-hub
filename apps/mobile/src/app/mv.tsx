@@ -12,13 +12,15 @@ import { useTranslation } from 'react-i18next';
 
 import '@/localization/analytics-i18n';
 import MvCatalog from '@/components/mv-catalog';
-import { getAnalytics, type AnalyticsResponse } from '@/services/analytics-api';
+import { getMvCatalog, type MvCatalogResponse } from '@/services/mv-api';
+import { mvCopy } from '@/localization/mv-copy';
 
 export default function MvScreen() {
   const { restartGrowth } = useRoseMotion();
   const webLayout = useWebLayout();
   const { t, i18n } = useTranslation('analytics');
-  const [data, setData] = useState<AnalyticsResponse | null>(null);
+  const copy = mvCopy(i18n.resolvedLanguage || i18n.language);
+  const [data, setData] = useState<MvCatalogResponse | null>(null);
   const [busy, setBusy] = useState(true);
   const [error, setError] = useState(false);
   const [linkError, setLinkError] = useState(false);
@@ -28,7 +30,7 @@ export default function MvScreen() {
     const controller = new AbortController();
     let active = true;
     const timeout = setTimeout(() => controller.abort(), 45000);
-    void getAnalytics(controller.signal)
+    void getMvCatalog(controller.signal)
       .then((result) => {
         if (active && !controller.signal.aborted) setData(result);
       })
@@ -71,7 +73,9 @@ export default function MvScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={Platform.OS === 'web' ? ['top'] : ['left', 'right']}>
-      <RoseScrollView contentContainerStyle={[styles.content, webLayout.contentStyle]}
+      <RoseScrollView
+        showMobileRoseFrame={false}
+        contentContainerStyle={[styles.content, webLayout.contentStyle]}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
         refreshControl={
@@ -81,20 +85,26 @@ export default function MvScreen() {
         <Text style={styles.accent}>ADO FAN HUB</Text>
         <Text style={styles.title}>MV</Text>
         {Platform.OS === 'web' && (
-<Pressable accessibilityRole="button" disabled={busy}
-          onPress={refresh} style={styles.button}>
-          <Text style={styles.accent}>{busy ? t('loading') : t('refresh')}</Text>
-        </Pressable>
-)}
+          <Pressable accessibilityRole="button" disabled={busy}
+            onPress={refresh} style={styles.button}>
+            <Text style={styles.accent}>{busy ? copy.loading : t('refresh')}</Text>
+          </Pressable>
+        )}
         {busy && !data && <ActivityIndicator color={FanColors.accent} size="large" />}
-        {error && <Text accessibilityRole="alert" style={styles.muted}>{t('error')}</Text>}
+        {error && <>
+          <Text accessibilityRole="alert" style={styles.muted}>{copy.error}</Text>
+          <Pressable accessibilityRole="button" disabled={busy} onPress={refresh} style={styles.button}>
+            <Text style={styles.accent}>{copy.retry}</Text>
+          </Pressable>
+        </>}
         {linkError && <Text accessibilityRole="alert" style={styles.muted}>{t('linkError')}</Text>}
         {data && (
           <>
+            {data.partial && <Text accessibilityRole="alert" style={styles.muted}>{copy.partial}</Text>}
             <MvCatalog videos={data.videos} formatNumber={number}
               onSelect={(id) => void openVideo(id)} />
             {data.unavailable_video_ids.length > 0 && (
-              <Text style={styles.muted}>{t('missing')}</Text>
+              <Text style={styles.muted}>{copy.missing}</Text>
             )}
             <Text style={styles.muted}>{t('note')}</Text>
             <Text style={styles.muted}>{t('source')}: {data.source}</Text>
