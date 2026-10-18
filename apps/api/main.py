@@ -1,3 +1,4 @@
+from fx_rates import FxWorker, router as fx_rates_router
 from mv_catalog import router as mv_catalog_router
 from analytics_growth import router as analytics_growth_router
 from official_images import router as official_images_router
@@ -29,10 +30,13 @@ async def mv_lifespan(app):
 
     app.state.mv_sync = scheduler
     scheduler.start()
+    fx_worker = FxWorker()
+    fx_worker.start()
 
     try:
         yield
     finally:
+        fx_worker.stop()
         scheduler.stop()
         app.state.mv_sync = None
 
@@ -90,6 +94,7 @@ def list_news(
             detail="News source temporarily unavailable",
         ) from None
 
+app.include_router(fx_rates_router)
 app.include_router(analytics_router)
 app.include_router(analytics_growth_router)
 app.include_router(official_images_router)

@@ -29,3 +29,6 @@ venv/
 Thumbs.db
 # Local backups
 *.bak
+
+# Shared reference rate runtime database
+apps/api/data/fx.sqlite3*
