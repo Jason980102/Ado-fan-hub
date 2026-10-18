@@ -71,7 +71,7 @@ export default function NewsArticleScreen() {
 }
 const s = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.background },
-  content: { width: '100%', maxWidth: 850, alignSelf: 'center', padding: 24, paddingTop: Platform.OS === 'web' ? 110 : 24, paddingBottom: 110, gap: 18 },
+  content: { width: '100%', maxWidth: 850, alignSelf: 'center', padding: 24, paddingTop: Platform.OS === 'web' ? 110 : 8, paddingBottom: 110, gap: 18 },
   eyebrow: { color: C.accent, fontSize: 12, fontWeight: '700', letterSpacing: 1.4 },
   heading: { color: C.text, fontSize: 28, fontWeight: '800' },
   card: { backgroundColor: C.surface, borderRadius: 20, padding: 20, gap: 16 },

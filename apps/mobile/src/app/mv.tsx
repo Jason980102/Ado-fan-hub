@@ -1,4 +1,5 @@
 import { usePageData } from '@/hooks/use-page-data';
+import { fanPageHeader } from '@/constants/fan-page-header';
 import { useRoseMotion } from '@/contexts/rose-motion-context';
 import RoseScrollView from '@/components/rose-scroll-view';
 import { FanColors } from '@/constants/fan-theme';
@@ -75,7 +76,6 @@ export default function MvScreen() {
   return (
     <SafeAreaView style={styles.container} edges={Platform.OS === 'web' ? ['top'] : ['left', 'right']}>
       <RoseScrollView
-        showMobileRoseFrame={false}
         contentContainerStyle={[styles.content, webLayout.contentStyle]}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
@@ -83,8 +83,8 @@ export default function MvScreen() {
           <RefreshControl refreshing={busy && data !== null}
             onRefresh={refresh} tintColor={FanColors.accent} colors={[FanColors.accent]} />
         }>
-        <Text style={styles.accent}>ADO FAN HUB</Text>
-        <Text style={styles.title}>MV</Text>
+        <Text style={[styles.eyebrow, fanPageHeader.eyebrow]}>ADO FAN HUB</Text>
+        <Text style={[styles.title, fanPageHeader.title]}>MV · {copy.title}</Text>
         {Platform.OS === 'web' && (
           <Pressable accessibilityRole="button" disabled={busy}
             onPress={refresh} style={styles.button}>
@@ -120,10 +120,12 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: FanColors.background },
   content: {
     width: '100%', maxWidth: Platform.OS === 'web' ? 1280 : 850, alignSelf: 'center',
-    padding: 24, paddingTop: Platform.OS === 'web' ? 100 : 24,
-    paddingBottom: 110, gap: 16,
+    padding: Platform.OS === 'web' ? 24 : 16,
+    paddingTop: Platform.OS === 'web' ? 100 : 8,
+    paddingBottom: 110, gap: 10,
   },
-  title: { color: FanColors.text, fontSize: 34, fontWeight: '800' },
+  eyebrow: { color: FanColors.accent, fontSize: 12, fontWeight: '700' },
+  title: { color: FanColors.text, fontSize: 28, fontWeight: '800' },
   accent: { color: FanColors.accent, fontWeight: '600' },
   muted: { color: FanColors.muted, fontSize: 14, lineHeight: 22 },
   button: {

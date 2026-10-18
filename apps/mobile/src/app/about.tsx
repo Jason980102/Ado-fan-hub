@@ -42,7 +42,7 @@ export default function AboutScreen() {
   </SafeAreaView>;
 }
 const s = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: C.background }, content: { padding: 24, paddingTop: Platform.OS === 'web' ? 110 : 24, paddingBottom: 110, gap: 20, width: '100%', maxWidth: 850, alignSelf: 'center' },
+  screen: { flex: 1, backgroundColor: C.background }, content: { padding: 24, paddingTop: Platform.OS === 'web' ? 110 : 8, paddingBottom: 110, gap: 20, width: '100%', maxWidth: 850, alignSelf: 'center' },
   identity: { flexDirection: 'row', gap: 18, alignItems: 'center' }, name: { flex: 1, gap: 4 }, title: { color: C.text, fontSize: 44, fontWeight: '800' },
   eyebrow: { color: C.accent, fontSize: 12, fontWeight: '700', letterSpacing: 1.3 }, heading: { color: C.text, fontSize: 22, fontWeight: '700' },
   body: { color: C.text, fontSize: 16, lineHeight: 27 }, muted: { color: C.muted, fontSize: 14, lineHeight: 23 },

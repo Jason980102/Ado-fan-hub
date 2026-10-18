@@ -1,10 +1,10 @@
+import { fanPageHeader } from '@/constants/fan-page-header';
 import RoseScrollView from '@/components/rose-scroll-view';
 import { FanColors } from '@/constants/fan-theme';
 import { useWebLayout } from '@/hooks/use-web-layout';
 import {
   ActivityIndicator,
   Image,
-  Linking,
   Platform,
   Pressable,
   RefreshControl,
@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
+import { useRouter } from 'expo-router';
 
 import { usePreferences } from '@/contexts/preferences-context';
 import { useNewsFeed } from '@/hooks/use-news-feed';
@@ -27,6 +28,7 @@ const CATEGORY_KEYS = {
 
 export default function NewsScreen() {
   const webLayout = useWebLayout();
+  const router = useRouter();
   const { t, i18n } = useTranslation();
   const { preferences } = usePreferences();
 
@@ -63,14 +65,18 @@ export default function NewsScreen() {
     }
   }
 
-  async function openOfficialLink(url: string) {
-    try {
-      await Linking.openURL(url);
-    } catch (err) {
-      console.error('Unable to open official link:', err);
-    }
+  function openNewsArticle(item: (typeof items)[number]) {
+    router.push({
+      pathname: '/news-article',
+      params: {
+        title: item.title,
+        published_at: item.published_at,
+        source_name: item.source_name,
+        source_url: item.source_url,
+        image_url: item.image_url ?? '',
+      },
+    });
   }
-
   return (
     <SafeAreaView style={styles.container} edges={Platform.OS === 'web' ? ['top'] : ['left', 'right']}>
       <RoseScrollView
@@ -92,9 +98,9 @@ export default function NewsScreen() {
           />
         }
       >
-        <Text style={styles.eyebrow}>ADO FAN HUB</Text>
-        <Text style={styles.title}>{t('newsTitle')}</Text>
-        <Text style={styles.subtitle}>{t('newsSubtitle')}</Text>
+        <Text style={[styles.eyebrow, fanPageHeader.eyebrow]}>ADO FAN HUB</Text>
+        <Text style={[styles.title, fanPageHeader.title]}>{t('newsTitle')}</Text>
+        <Text style={[styles.subtitle, fanPageHeader.subtitle]}>{t('newsSubtitle')}</Text>
 
         {Platform.OS === 'web' && (
 <Pressable
@@ -134,7 +140,7 @@ export default function NewsScreen() {
           <Pressable
             key={item.id}
             style={styles.card}
-            onPress={() => void openOfficialLink(item.source_url)}
+            onPress={() => openNewsArticle(item)}
           >
             <View style={styles.meta}>
               <Text style={styles.category}>
@@ -181,7 +187,7 @@ export default function NewsScreen() {
             </View>
 
             <Text style={styles.action}>
-              {t('newsOpenOfficial')} ↗
+              {language.startsWith('zh') ? '閱讀詳情' : language.startsWith('ja') ? '詳細を見る' : 'View details'} →
             </Text>
           </Pressable>
         ))}
@@ -223,7 +229,7 @@ const styles = StyleSheet.create({
     maxWidth: 850,
     alignSelf: 'center',
     padding: 24,
-    paddingTop: Platform.OS === 'web' ? 100 : 12,
+    paddingTop: Platform.OS === 'web' ? 100 : 8,
     paddingBottom: 110,
     gap: 16,
   },
@@ -235,7 +241,7 @@ const styles = StyleSheet.create({
   },
   title: {
     color: FanColors.text,
-    fontSize: 34,
+    fontSize: 28,
     lineHeight: 46,
     fontWeight: '800',
   },

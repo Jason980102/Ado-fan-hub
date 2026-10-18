@@ -1,3 +1,4 @@
+import { fanPageHeader } from '@/constants/fan-page-header';
 import RoseScrollView from '@/components/rose-scroll-view';
 import { FanColors } from '@/constants/fan-theme';
 import { useState } from 'react';
@@ -85,9 +86,9 @@ export default function SettingsScreen() {
   return (
     <SafeAreaView style={styles.container} edges={Platform.OS === 'web' ? ['top'] : ['left', 'right']}>
       <RoseScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.eyebrow}>ADO FAN HUB</Text>
-        <Text style={styles.title}>{t('settings')}</Text>
-        <Text style={styles.subtitle}>
+        <Text style={[styles.eyebrow, fanPageHeader.eyebrow]}>ADO FAN HUB</Text>
+        <Text style={[styles.title, fanPageHeader.title]}>{t('settings')}</Text>
+        <Text style={[styles.subtitle, fanPageHeader.subtitle]}>
           {t('settingsSubtitle')}
         </Text>
 
@@ -185,7 +186,7 @@ const styles = StyleSheet.create({
     maxWidth: 850,
     alignSelf: 'center',
     padding: 24,
-    paddingTop: Platform.OS === 'web' ? 110 : 24,
+    paddingTop: Platform.OS === 'web' ? 110 : 8,
     paddingBottom: 110,
     gap: 18,
   },
@@ -197,7 +198,7 @@ const styles = StyleSheet.create({
   },
   title: {
     color: FanColors.text,
-    fontSize: 34,
+    fontSize: 28,
     fontWeight: '800',
   },
   subtitle: {

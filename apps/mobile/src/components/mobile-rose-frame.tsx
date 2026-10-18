@@ -26,7 +26,7 @@ export default function MobileRoseFrame() {
 
   if (Platform.OS === 'web') return null;
   const w = size.width;
-  const h = size.height;
+  const h = Math.min(size.height, 1400);
   type Point = { x: number; y: number };
   const makeVine = (side: 'left' | 'right') => {
     const right = side === 'right';
@@ -86,7 +86,12 @@ export default function MobileRoseFrame() {
       }}
       style={[StyleSheet.absoluteFill, { bottom: 28 }]}>
       {w > 0 && h > 100 && (
-        <Animated.View style={[StyleSheet.absoluteFill, {
+        <Animated.View style={[{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: w,
+          height: h,
           opacity: 0.4,
           transform: [{ translateX: sway.interpolate({ inputRange: [0, 1], outputRange: [-1.5, 1.5] }) }],
         }]}>
@@ -127,13 +132,16 @@ export default function MobileRoseFrame() {
             );
             const start = Math.min(0.85, attachment.distance / vine.length);
             return <Animated.Image key={index} source={flower.source} resizeMode="contain"
-              style={{ position: 'absolute', top: attachment.y - 17,
+              style={{
+                position: 'absolute', top: attachment.y - 17,
                 ...(flower.side === 'left' ? { left: attachment.x - 17 } : { right: attachment.x - 17 }),
                 width: 34, height: 34, opacity: appear(start),
-                transform: [{ rotate: flower.angle }, { scale: growth.interpolate({
-                  inputRange: [0, start, Math.min(1, start + 0.12), 1],
-                  outputRange: [0.1, 0.1, 1, 1], extrapolate: 'clamp',
-                }) }],
+                transform: [{ rotate: flower.angle }, {
+                  scale: growth.interpolate({
+                    inputRange: [0, start, Math.min(1, start + 0.12), 1],
+                    outputRange: [0.1, 0.1, 1, 1], extrapolate: 'clamp',
+                  })
+                }],
               }} />;
           })}
         </Animated.View>

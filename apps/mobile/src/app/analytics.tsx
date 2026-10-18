@@ -1,4 +1,5 @@
 import { usePageData } from '@/hooks/use-page-data';
+import { fanPageHeader } from '@/constants/fan-page-header';
 import { useRoseMotion } from '@/contexts/rose-motion-context';
 import RoseScrollView from '@/components/rose-scroll-view';
 import { FanColors } from '@/constants/fan-theme';
@@ -180,9 +181,9 @@ export default function AnalyticsScreen() {
         {Platform.OS === 'web' ? (
           <View style={styles.webHeader}>
             <View style={styles.webHeading}>
-              <Text style={styles.accent}>ADO FAN HUB</Text>
-              <Text style={styles.title}>{t('title')}</Text>
-              <Text style={styles.muted}>{t('subtitle')}</Text>
+              <Text style={[styles.accent, fanPageHeader.eyebrow]}>ADO FAN HUB</Text>
+              <Text style={[styles.title, fanPageHeader.title]}>{t('title')}</Text>
+              <Text style={[styles.muted, fanPageHeader.subtitle]}>{t('subtitle')}</Text>
             </View>
             <Pressable accessibilityRole="button" style={styles.webRefresh}
               disabled={busy} onPress={refresh}>
@@ -191,9 +192,9 @@ export default function AnalyticsScreen() {
           </View>
         ) : (
           <>
-            <Text style={styles.accent}>ADO FAN HUB</Text>
-            <Text style={styles.title}>{t('title')}</Text>
-            <Text style={styles.muted}>{t('subtitle')}</Text>
+            <Text style={[styles.accent, fanPageHeader.eyebrow]}>ADO FAN HUB</Text>
+            <Text style={[styles.title, fanPageHeader.title]}>{t('title')}</Text>
+            <Text style={[styles.muted, fanPageHeader.subtitle]}>{t('subtitle')}</Text>
           </>
         )}
 
@@ -399,10 +400,10 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: FanColors.background },
   content: {
     width: '100%', maxWidth: 850, alignSelf: 'center',
-    padding: 24, paddingTop: Platform.OS === 'web' ? 100 : 24,
+    padding: 24, paddingTop: Platform.OS === 'web' ? 100 : 8,
     paddingBottom: 110, gap: 16,
   },
-  title: { color: FanColors.text, fontSize: 34, fontWeight: '800' },
+  title: { color: FanColors.text, fontSize: 28, fontWeight: '800' },
   heading: { color: FanColors.text, fontSize: 18, fontWeight: '700' },
   accent: { color: FanColors.accent, fontWeight: '600' },
   muted: { color: FanColors.muted, fontSize: 14, lineHeight: 22 },
