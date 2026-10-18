@@ -101,8 +101,64 @@ async function main() {
   await assert.rejects(() => restock.setRestockSubscription('Pusheen', 'test', true, 'zh'), /push_not_configured/);
   assert.equal(prepared, 0, 'disabled push must not ask for device permission or claim subscription');
 
+  await testNativeStartup();
   renderScreens(api, wishlist, ended[0]);
   console.log('PASS: sold-out API, active/expired boundaries, available/sold-out wishlist adds, concurrent writes, permanent ended retention, offline retention, unconfigured push, sold-out section placement, history filtering, wishlist ended label.');
+}
+
+async function testNativeStartup() {
+  const projectId = '12345678-1234-1234-1234-123456789012';
+  for (const constants of [
+    { executionEnvironment: 'storeClient', expoConfig: { extra: { eas: { projectId } } } },
+    { executionEnvironment: 'bare', expoConfig: {} },
+  ]) {
+    const imports = [];
+    const native = load('src/services/push-device.native.ts', {}, {
+      require: key => {
+        imports.push(key);
+        if (key === 'expo-constants') return wrap(constants);
+        if (key === 'react-native') return { Platform: { OS: 'android' } };
+        throw new Error('Native push dependency must not load at startup: ' + key);
+      },
+    });
+    assert.equal(await native.getPushIdentity(), null);
+    const stop = native.observePush(() => {}, () => {});
+    stop();
+    await settle();
+    await assert.rejects(() => native.preparePushDevice(projectId), /push_development_build|push_not_configured/);
+    assert(!imports.includes('expo-notifications'));
+    assert(!imports.includes('expo-secure-store'));
+    assert(!imports.includes('expo-crypto'));
+  }
+
+  let saved = null, listeners = 0, removed = 0;
+  const native = load('src/services/push-device.native.ts', {
+    'expo-constants': wrap({ executionEnvironment: 'bare', expoConfig: { extra: { eas: { projectId } } } }),
+    'react-native': { Platform: { OS: 'android' } },
+    'expo-secure-store': { getItemAsync: async () => saved, setItemAsync: async (_, value) => { saved = value; } },
+    'expo-crypto': { getRandomBytesAsync: async () => new Uint8Array(32).fill(9), randomUUID: () => projectId },
+    'expo-notifications': {
+      AndroidImportance: { DEFAULT: 3 }, setNotificationChannelAsync: async () => {},
+      getPermissionsAsync: async () => ({ status: 'granted' }),
+      getExpoPushTokenAsync: async () => ({ data: 'ExpoPushToken[test1234567890]' }),
+      setNotificationHandler: () => {}, getLastNotificationResponse: () => null,
+      addNotificationResponseReceivedListener: () => { listeners++; return { remove: () => { removed++; } }; },
+      addPushTokenListener: () => { listeners++; return { remove: () => { removed++; } }; },
+    },
+  });
+  const stoppedBeforeLoad = native.observePush(() => {}, () => {});
+  stoppedBeforeLoad();
+  await settle();
+  assert.equal(listeners, 0, 'disposing before async initialization must not leak listeners');
+  const prepared = await native.preparePushDevice(projectId);
+  assert.equal(prepared.identity.secret.length, 64);
+  assert.equal(prepared.token, 'ExpoPushToken[test1234567890]');
+  const stop = native.observePush(() => {}, () => {});
+  await settle();
+  assert.equal(listeners, 2);
+  stop();
+  assert.equal(removed, 2);
+  console.log('PASS: Expo Go and unconfigured startup never load native push dependencies; configured push still initializes and cleans up.');
 }
 
 function renderScreens(api, wishlist, endedItem) {
