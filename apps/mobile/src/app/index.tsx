@@ -89,7 +89,7 @@ export default function HomeScreen() {
         <View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(3,9,22,0.58)' }]} />
         <HeroGeometry />
         <View style={[s.heroCopy, layout.wide && { flex: 1 }]}>
-          <Text style={[s.eyebrow, s.heroEyebrow]}>ADO NOW</Text>
+          <Text style={[s.eyebrow, s.heroEyebrow]}>Ado NOW</Text>
           <View style={s.heroTitleRow}>
             <Text style={[s.heroTitle, s.heroTitleText]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.5}>{w.nowTitle}</Text>
             {Platform.OS !== 'web' && subscriberBadge}
@@ -161,7 +161,7 @@ export default function HomeScreen() {
          </Pressable>
        </View>}
        {!feed.loading && !feed.error && feed.items.length === 0 && <Text style={s.body}>{w.empty}</Text>}
-       {feed.items.slice(0, 10).map(item => (
+       {feed.items.slice(0, 5).map(item => (
          <Pressable accessibilityRole="button" key={item.id}
            onPress={() => openNewsArticle(item)}
            style={({ pressed }) => [s.newsCard, pressed && s.pressed]}>
@@ -205,7 +205,7 @@ const s = StyleSheet.create({
   heroLink: { color: '#c8e5ff', fontWeight: '700', fontSize: 13 },
   bottomAll: { alignSelf: 'center', padding: 12 },
   screen: { flex: 1, backgroundColor: C.background }, content: { width: '100%', maxWidth: 850, alignSelf: 'center', paddingHorizontal: 20, paddingTop: Platform.OS === 'web' ? 110 : 24, paddingBottom: 110, gap: 18 },
-  brand: { flexDirection: 'row', alignItems: 'center', gap: 12 }, brandCopy: { gap: 10 }, rose: { width: 44, height: 44 },
+  brand: { flexDirection: 'row', alignItems: 'center', gap: 12 }, brandCopy: { gap: 10 }, rose: { width: 58, height: 58 },
   title: { color: C.text, fontSize: 30, fontWeight: '800' }, eyebrow: { color: C.accent, fontWeight: '700', fontSize: 11, letterSpacing: 1.6 },
   hero: { padding: 24, paddingVertical: 36, minHeight: 290, backgroundColor: C.surfaceAlt, borderRadius: 24, gap: 24, overflow: 'hidden', justifyContent: 'center' }, heroWide: { flexDirection: 'row', alignItems: 'center', gap: 32, minHeight: 320, padding: 36 }, heroCopy: { gap: 12 },
   heroTitle: { color: C.text, fontSize: 28, lineHeight: 37, fontWeight: '800' }, body: { color: C.muted, fontSize: 14, lineHeight: 23 },

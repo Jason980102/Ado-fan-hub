@@ -4,6 +4,7 @@ from fx_rates import FxWorker, router as fx_rates_router
 from mv_catalog import router as mv_catalog_router
 from shop_catalog import router as shop_catalog_router
 from analytics_growth import router as analytics_growth_router
+from tiktok_avatar import router as tiktok_avatar_router
 from official_images import router as official_images_router
 from analytics import router as analytics_router
 from typing import Annotated
@@ -103,6 +104,7 @@ def list_news(
 app.include_router(fx_rates_router)
 app.include_router(analytics_router)
 app.include_router(analytics_growth_router)
+app.include_router(tiktok_avatar_router)
 app.include_router(official_images_router)
 app.include_router(shop_catalog_router)
 app.include_router(shop_stock_router)
