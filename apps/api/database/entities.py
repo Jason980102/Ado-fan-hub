@@ -1,9 +1,11 @@
 """Shared persistent data models for Ado Fan Hub."""
 
+from decimal import Decimal
+
 import uuid
 from datetime import datetime
 
-from sqlalchemy import (
+from sqlalchemy import (Numeric, CheckConstraint,
     BigInteger, Boolean, DateTime, ForeignKey, Index,
     Integer, String, Text, UniqueConstraint, Uuid, func
 )
@@ -222,4 +224,59 @@ class NewsSyncState(Base):
         DateTime(timezone=True),
         server_default=func.now(),
         nullable=False,
+    )
+
+
+class XSyncState(Base):
+    """Incremental synchronization state for public X accounts."""
+
+    __tablename__ = "x_sync_state"
+
+    source_code: Mapped[str] = mapped_column(
+        String(40),
+        ForeignKey("news_sources.code"),
+        primary_key=True,
+    )
+    x_user_id: Mapped[str | None] = mapped_column(String(32))
+    since_id: Mapped[str | None] = mapped_column(String(32))
+    last_success_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True)
+    )
+    last_error: Mapped[str | None] = mapped_column(Text)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+    )
+
+
+class XApiBudget(Base):
+    """Shared monthly estimated X API budget across all X accounts."""
+
+    __tablename__ = "x_api_budget"
+
+    billing_month: Mapped[str] = mapped_column(
+        String(7), primary_key=True
+    )
+    reserved_posts: Mapped[int] = mapped_column(
+        Integer, nullable=False, server_default="0"
+    )
+    estimated_cost_usd: Mapped[Decimal] = mapped_column(
+        Numeric(10, 4), nullable=False, server_default="0"
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+    )
+
+    __table_args__ = (
+        CheckConstraint(
+            "reserved_posts >= 0",
+            name="ck_x_budget_nonnegative_posts",
+        ),
+        CheckConstraint(
+            "estimated_cost_usd >= 0 AND estimated_cost_usd <= 2.25",
+            name="ck_x_budget_internal_limit",
+        ),
     )
