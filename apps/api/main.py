@@ -104,7 +104,9 @@ def list_news(
 ):
     try:
         from services.news_service import search_news_titles
-        if q.strip():
+        if q.strip() or source in (
+            "youtube", "x", "x_staff", "x_ado", "x_fanclub"
+        ):
             return search_news_titles(
                 category=category, limit=limit, offset=offset,
                 source=source, query=q,

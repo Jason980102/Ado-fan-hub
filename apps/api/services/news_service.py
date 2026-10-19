@@ -121,8 +121,6 @@ def search_news_titles(
         raise ValueError("Unsupported news source")
 
     query = query.strip().casefold()
-    if not query:
-        return list_cached_news(category, limit, offset, source)
 
     if len(query) > 100:
         raise ValueError("Search query too long")
@@ -140,8 +138,19 @@ def search_news_titles(
             if engine.dialect.name == "postgresql":
                 from sqlalchemy import text
                 session.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY"))
-            conditions = [NewsSource.is_active.is_(True),
-                          NewsArticle.title.ilike("%" + query.replace("!", "!!").replace("%", "!%").replace("_", "!_") + "%", escape="!")]
+            conditions = [NewsSource.is_active.is_(True)]
+            if query:
+                escaped_query = (
+                    query.replace("!", "!!")
+                    .replace("%", "!%")
+                    .replace("_", "!_")
+                )
+                conditions.append(
+                    NewsArticle.title.ilike(
+                        "%" + escaped_query + "%",
+                        escape="!",
+                    )
+                )
             if source == "x":
                 conditions.append(NewsArticle.source_code.in_(("x_staff", "x_ado", "x_fanclub")))
             elif source != "all":
