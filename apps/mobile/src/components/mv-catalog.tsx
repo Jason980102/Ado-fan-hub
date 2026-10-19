@@ -25,14 +25,26 @@ export default function MvCatalog({ videos, formatNumber, onSelect }: Props) {
     : language.startsWith('ja')
       ? 'Adoのオリジナル、カバー、ライブ、コラボ作品を探す。'
       : 'Explore Ado originals, covers, live shows and collaborations.';
-  const { preferences } = usePreferences();
+  const { preferences, loading, updateMvDisplayMode } = usePreferences();
   const [category, setCategory] = useState<MvCategory | 'all'>('all');
+  const displayMode = preferences.mvDisplayMode;
+
+  function changeDisplayMode(mode: 'grid' | 'list') {
+    if (loading || mode === displayMode) return;
+    void updateMvDisplayMode(mode).catch((error) => {
+      console.error('Unable to save MV display mode:', error);
+    });
+  }
   const [query, setQuery] = useState('');
   const [gridWidth, setGridWidth] = useState(0);
   const columns = Platform.OS !== 'web' ? 1
     : gridWidth >= 1000 ? 3 : gridWidth >= 640 ? 2 : 1;
-  const cardWidth = columns === 1 ? '100%'
-    : Math.floor((gridWidth - 16 * (columns - 1)) / columns);
+  const listColumns = Platform.OS !== 'web' ? 1
+    : gridWidth >= 1250 ? 5 : gridWidth >= 950 ? 4
+      : gridWidth >= 700 ? 3 : gridWidth >= 480 ? 2 : 1;
+  const activeColumns = displayMode === 'list' ? listColumns : columns;
+  const cardWidth = activeColumns === 1 ? '100%'
+    : Math.floor((gridWidth - 16 * (activeColumns - 1)) / activeColumns);
   const [sortOrder, setSortOrder] = useState<MvSort>('newest');
   const [failedImages, setFailedImages] = useState<Record<string, string>>({});
   const index = useMemo(() => indexMvVideos(videos), [videos]);
@@ -84,7 +96,23 @@ export default function MvCatalog({ videos, formatNumber, onSelect }: Props) {
           </AnimatedPressable>
         ))}
       </HorizontalFilterRow>
-      <Text style={styles.muted}>{text.count}{formatNumber(matches.length)}</Text>
+      <View style={styles.displayRow}>
+        <Text style={styles.muted}>{text.count}{formatNumber(matches.length)}</Text>
+        <View style={styles.displayControls}>
+          <Pressable accessibilityRole="button" accessibilityLabel={language.startsWith("zh") ? "\u5361\u7247\u6a21\u5f0f" : language.startsWith("ja") ? "\u30ab\u30fc\u30c9\u8868\u793a" : "Card view"}
+            accessibilityState={{ selected: displayMode === 'grid' }}
+            onPress={() => changeDisplayMode('grid')}
+            style={[styles.modeButton, displayMode === 'grid' && styles.selected]}>
+            <Ionicons name="grid-outline" size={19} color={FanColors.accent} />
+          </Pressable>
+          <Pressable accessibilityRole="button" accessibilityLabel={language.startsWith("zh") ? "\u6e05\u55ae\u6a21\u5f0f" : language.startsWith("ja") ? "\u30ea\u30b9\u30c8\u8868\u793a" : "List view"}
+            accessibilityState={{ selected: displayMode === 'list' }}
+            onPress={() => changeDisplayMode('list')}
+            style={[styles.modeButton, displayMode === 'list' && styles.selected]}>
+            <Ionicons name="list-outline" size={21} color={FanColors.accent} />
+          </Pressable>
+        </View>
+      </View>
       {matches.length === 0 && <View style={styles.details}>
         <Text style={styles.muted}>{text.empty}</Text>
         {(query.length > 0 || category !== 'all') && <AnimatedPressable accessibilityRole="button"
@@ -101,20 +129,28 @@ export default function MvCatalog({ videos, formatNumber, onSelect }: Props) {
         <AnimatedPressable accessibilityRole="link"
           accessibilityLabel={`${video.title}, ${text.views}: ${formatNumber(video.view_count)}, ${text.likes}: ${formatNumber(video.like_count)}`}
           onPress={() => onSelect(video.id)}
-          style={({ pressed }) => [styles.row, Platform.OS !== 'web' && styles.rowCompact, pressed && styles.pressed]}>
+          style={({ pressed }) => [
+            styles.row,
+            displayMode === 'list' ? styles.rowList : styles.fillHeight,
+            pressed && styles.pressed,
+          ]}>
           {video.thumbnail_url && failedImages[video.id] !== video.thumbnail_url ? (
-            <Image source={{ uri: video.thumbnail_url }} style={[styles.image, Platform.OS !== 'web' && styles.imageCompact]}
+            <Image source={{ uri: video.thumbnail_url }} style={[styles.image, displayMode === 'list' && styles.imageList]}
               resizeMode="cover" accessible={false}
               onError={() => setFailedImages((current) => ({
                 ...current, [video.id]: video.thumbnail_url!,
               }))} />
           ) : (
-            <View style={[styles.image, Platform.OS !== 'web' && styles.imageCompact, styles.fallback]}>
+            <View style={[styles.image, displayMode === 'list' && styles.imageList, styles.fallback]}>
               <Text style={styles.muted}>{text.image}</Text>
             </View>
           )}
-          <View style={[styles.details, Platform.OS !== 'web' && styles.detailsCompact]}>
-            <Text style={styles.song} numberOfLines={Platform.OS === 'web' ? undefined : 2}>{video.title}</Text>
+          <View style={[
+              styles.details,
+              displayMode === 'grid' && styles.detailsFixed,
+              displayMode === 'list' && styles.detailsList,
+            ]}>
+            <Text style={styles.song} numberOfLines={2}>{video.title}</Text>
             <Text style={styles.accent} numberOfLines={2}>
               {video.categories.map((item) => text[item]).join(' / ')}
             </Text>
@@ -143,7 +179,16 @@ export default function MvCatalog({ videos, formatNumber, onSelect }: Props) {
 
 const styles = StyleSheet.create({
   container: { gap: 10 },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: Platform.OS === 'web' ? 16 : 10, alignItems: 'flex-start' },
+  displayRow: {
+    flexDirection: 'row', alignItems: 'center',
+    justifyContent: 'space-between', gap: 12,
+  },
+  displayControls: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  modeButton: {
+    padding: 8, borderRadius: 10, borderWidth: 1,
+    borderColor: FanColors.border, backgroundColor: FanColors.surface,
+  },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: Platform.OS === 'web' ? 16 : 10, alignItems: 'stretch' },
   title: { color: FanColors.text, fontSize: 20, fontWeight: '700' },
   muted: { color: FanColors.muted, fontSize: 13, lineHeight: 20 },
   accent: { color: FanColors.accent, fontSize: 13 },
@@ -158,18 +203,31 @@ const styles = StyleSheet.create({
     paddingVertical: 13 },
   clearButton: { width: 30, height: 36, alignItems: 'center', justifyContent: 'center' },
   hint: { color: FanColors.muted, fontSize: 11, lineHeight: 17 },
-  row: { flexDirection: 'column', gap: 14, padding: 16,
-    backgroundColor: FanColors.surface, borderRadius: 14, alignItems: 'flex-start' },
-  rowCompact: { flexDirection: 'row', gap: 12, padding: 12 },
-  image: { width: '100%', aspectRatio: 16 / 9, borderRadius: 8,
+  row: { flexDirection: 'column', gap: 0, padding: 0,
+    backgroundColor: FanColors.surface, borderRadius: 14,
+    borderWidth: 1, borderColor: FanColors.border,
+    overflow: 'hidden', alignItems: 'stretch' },
+  image: { width: '100%', aspectRatio: 16 / 9,
     backgroundColor: FanColors.surfaceAlt },
-  imageCompact: { width: 108, height: 72, aspectRatio: undefined },
   fallback: { alignItems: 'center', justifyContent: 'center' },
-  details: { width: '100%', gap: 8 },
-  detailsCompact: { flex: 1, minWidth: 0, width: 'auto', gap: 4 },
+  details: { width: '100%', gap: 8, padding: 12 },
+  detailsFixed: { height: 240 },
   song: { color: FanColors.text, fontSize: 16, lineHeight: 24, fontWeight: '600' },
   metadata: { color: FanColors.muted, fontSize: 12, lineHeight: 17 },
   statRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   watch: { color: FanColors.accent, fontSize: 12, fontWeight: '600' },
+  rowList: {
+    flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12,
+    height: 220,
+  },
+  imageList: {
+    width: 108, height: 72, aspectRatio: undefined,
+    borderRadius: 8,
+  },
+  detailsList: {
+    flex: 1, minWidth: 0, width: 'auto', padding: 0,
+    justifyContent: 'center',
+  },
+  fillHeight: { flex: 1 },
   pressed: { opacity: 0.7 },
 });

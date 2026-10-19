@@ -2,6 +2,7 @@ from shop_stock import router as shop_stock_router
 from shop_push import RestockWorker, router as shop_push_router
 from fx_rates import FxWorker, router as fx_rates_router
 from mv_catalog import router as mv_catalog_router
+from official_curated_api import router as official_curated_router
 from shop_catalog import router as shop_catalog_router
 from analytics_growth import router as analytics_growth_router
 from tiktok_avatar import router as tiktok_avatar_router
@@ -134,6 +135,7 @@ app.include_router(shop_stock_router)
 app.include_router(shop_push_router)
 
 app.include_router(mv_catalog_router)
+app.include_router(official_curated_router)
 
 
 @app.get("/api/mv/sync-status", tags=["MV catalog"])

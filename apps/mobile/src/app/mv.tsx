@@ -14,6 +14,12 @@ import { useTranslation } from 'react-i18next';
 
 import '@/localization/analytics-i18n';
 import MvCatalog from '@/components/mv-catalog';
+import OfficialPicks from '@/components/official-picks';
+import {
+  getOfficialPicks,
+  type OfficialPicksResponse,
+} from '@/services/official-picks-api';
+import { officialPicksCopy } from '@/localization/official-picks-copy';
 import { getMvCatalog, type MvCatalogResponse } from '@/services/mv-api';
 import { mvCopy } from '@/localization/mv-copy';
 
@@ -23,16 +29,38 @@ export default function MvScreen() {
   const { t, i18n } = useTranslation('analytics');
   const copy = mvCopy(i18n.resolvedLanguage || i18n.language);
   const [data, setData] = useState<MvCatalogResponse | null>(null);
+  const [picks, setPicks] = useState<OfficialPicksResponse | null>(null);
+  const [picksBusy, setPicksBusy] = useState(true);
+  const [picksError, setPicksError] = useState(false);
   const [busy, setBusy] = useState(true);
   const [error, setError] = useState(false);
   const [linkError, setLinkError] = useState(false);
   const [version, setVersion] = useState(0);
 
   usePageData(useCallback(() => {
+    void version;
     const controller = new AbortController();
     let active = true;
     const timeout = setTimeout(() => controller.abort(), 45000);
-    if (version >= 0) void getMvCatalog(controller.signal)
+    setPicksBusy(true);
+    setPicksError(false);
+    const picksTask = getOfficialPicks(controller.signal)
+      .then((result) => {
+        if (active && !controller.signal.aborted) {
+          setPicks(result);
+          setPicksError(false);
+        }
+      })
+      .catch(() => {
+        if (active && !controller.signal.aborted) {
+          setPicksError(true);
+        }
+      })
+      .finally(() => {
+        if (active) setPicksBusy(false);
+      });
+
+    const mvTask = getMvCatalog(controller.signal)
       .then((result) => {
         if (active && !controller.signal.aborted) { setData(result); setError(false); }
       })
@@ -40,9 +68,11 @@ export default function MvScreen() {
         if (active) setError(true);
       })
       .finally(() => {
-        clearTimeout(timeout);
         if (active) setBusy(false);
       });
+
+    void Promise.allSettled([picksTask, mvTask])
+      .finally(() => clearTimeout(timeout));
 
     return () => {
       active = false;
@@ -52,7 +82,7 @@ export default function MvScreen() {
   }, [version]));
 
   function refresh() {
-    if (busy) return;
+    if (busy || picksBusy) return;
     restartGrowth('refresh');
     setBusy(true);
     setError(false);
@@ -80,21 +110,21 @@ export default function MvScreen() {
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
         refreshControl={
-          <RefreshControl refreshing={busy && data !== null}
+          <RefreshControl refreshing={(busy || picksBusy) && data !== null}
             onRefresh={refresh} tintColor={FanColors.accent} colors={[FanColors.accent]} />
         }>
         <Text style={[styles.eyebrow, fanPageHeader.eyebrow]}>ADO FAN HUB</Text>
         <Text style={[styles.title, fanPageHeader.title]}>MV · {copy.title}</Text>
         {Platform.OS === 'web' && (
-          <Pressable accessibilityRole="button" disabled={busy}
+          <Pressable accessibilityRole="button" disabled={busy || picksBusy}
             onPress={refresh} style={styles.button}>
-            <Text style={styles.accent}>{busy ? copy.loading : t('refresh')}</Text>
+            <Text style={styles.accent}>{busy || picksBusy ? copy.loading : t('refresh')}</Text>
           </Pressable>
         )}
         {busy && !data && <ActivityIndicator color={FanColors.accent} size="large" />}
         {error && <>
           <Text accessibilityRole="alert" style={styles.muted}>{copy.error}</Text>
-          <Pressable accessibilityRole="button" disabled={busy} onPress={refresh} style={styles.button}>
+          <Pressable accessibilityRole="button" disabled={busy || picksBusy} onPress={refresh} style={styles.button}>
             <Text style={styles.accent}>{copy.retry}</Text>
           </Pressable>
         </>}
@@ -109,6 +139,21 @@ export default function MvScreen() {
             )}
             <Text style={styles.muted}>{t('note')}</Text>
             <Text style={styles.muted}>{t('source')}: {data.source}</Text>
+          </>
+        )}
+        {(picksBusy || picksError || picks) && (
+          <>
+            {picksBusy && !picks && (
+              <Text style={styles.muted}>
+                {officialPicksCopy(i18n.resolvedLanguage || i18n.language).loading}
+              </Text>
+            )}
+            {picksError && !picks && (
+              <Text accessibilityRole="alert" style={styles.muted}>
+                {officialPicksCopy(i18n.resolvedLanguage || i18n.language).unavailable}
+              </Text>
+            )}
+            {picks && <OfficialPicks data={picks} />}
           </>
         )}
       </RoseScrollView>

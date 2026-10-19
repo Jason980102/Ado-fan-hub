@@ -14,12 +14,14 @@ import {
   loadPreferences,
   savePreferences,
   type UserPreferences,
+  type MvDisplayMode,
 } from '@/services/preferences';
 
 type PreferencesContextValue = {
   preferences: UserPreferences;
   loading: boolean;
   updatePreferences: (next: UserPreferences) => Promise<void>;
+  updateMvDisplayMode: (mode: MvDisplayMode) => Promise<void>;
 };
 
 const PreferencesContext =
@@ -74,13 +76,23 @@ export function PreferencesProvider({
     []
   );
 
+  const updateMvDisplayMode = useCallback(
+    async (mode: MvDisplayMode) => {
+      const next = { ...preferences, mvDisplayMode: mode };
+      await savePreferences(next);
+      setPreferences(next);
+    },
+    [preferences]
+  );
+
   const value = useMemo(
     () => ({
       preferences,
       loading,
       updatePreferences,
+      updateMvDisplayMode,
     }),
-    [preferences, loading, updatePreferences]
+    [preferences, loading, updatePreferences, updateMvDisplayMode]
   );
 
   return (

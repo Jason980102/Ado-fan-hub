@@ -5,7 +5,10 @@ import type { AppLanguage } from '../localization/i18n';
 
 const STORAGE_KEY = '@ado-fan-hub/preferences/v1';
 
+export type MvDisplayMode = 'grid' | 'list';
+
 export type UserPreferences = {
+    mvDisplayMode: MvDisplayMode;
     language: AppLanguage;
     region: string;
     timeZone: string;
@@ -40,6 +43,7 @@ export function getDefaultPreferences(): UserPreferences {
         region: locale?.regionCode ?? 'US',
         timeZone: calendar?.timeZone ?? 'UTC',
         onboardingCompleted: false,
+        mvDisplayMode: 'grid',
     };
 }
 
@@ -71,6 +75,7 @@ export async function loadPreferences(): Promise<UserPreferences> {
                     ? parsed.timeZone
                     : defaults.timeZone,
             onboardingCompleted: parsed.onboardingCompleted === true,
+            mvDisplayMode: parsed.mvDisplayMode === 'list' ? 'list' : 'grid',
         };
     } catch (error) {
         console.warn('Unable to load user preferences:', error);
