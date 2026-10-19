@@ -24,14 +24,27 @@ class NoRedirect(HTTPRedirectHandler):
 
 
 def fetch_frankfurter(now):
+    # Query a specific UTC date to avoid future-dated latest quotes.
+    # The existing parser still validates every currency and date.
+    from urllib.parse import urlencode
+
+    query = urlencode({
+        "date": now.date().isoformat(),
+        "base": "JPY",
+        "quotes": "USD,TWD",
+    })
+
     request = Request(
-        "https://api.frankfurter.dev/v2/rates?base=JPY&quotes=USD,TWD",
+        "https://api.frankfurter.dev/v2/rates?" + query,
         headers={"Accept": "application/json", "User-Agent": "AdoFanHub/FX"},
     )
+
     with build_opener(NoRedirect()).open(request, timeout=8) as response:
         body = response.read(65_537)
+
     if len(body) > 65_536:
         raise ValueError("Exchange rate response too large")
+
     return parse_frankfurter(json.loads(body), now)
 
 

@@ -1,3 +1,15 @@
+export type NewsSource =
+  | 'all'
+  | 'x'
+  | 'x_staff'
+  | 'x_ado'
+  | 'x_fanclub'
+  | 'instagram'
+  | 'fanclub' | 'fanclub_shop'
+  | 'official_shop'
+  | 'youtube'
+  | 'universal';
+
 export type NewsCategory = 'official' | 'concert' | 'merch' | 'media';
 
 export type NewsItem = {
@@ -22,14 +34,16 @@ const API_URL = process.env.EXPO_PUBLIC_API_URL;
 export async function getNews(
   limit = 10,
   signal?: AbortSignal,
-  offset = 0
+  offset = 0,
+  source: NewsSource = 'all',
+  searchQuery = ''
 ): Promise<NewsListResponse> {
   if (!API_URL) {
     throw new Error('EXPO_PUBLIC_API_URL is not configured');
   }
 
   const response = await fetch(
-    `${API_URL}/api/news?limit=${limit}&offset=${offset}`,
+    `${API_URL}/api/news?limit=${limit}&offset=${offset}&source=${encodeURIComponent(source)}${searchQuery.trim() ? `&q=${encodeURIComponent(searchQuery.trim())}` : ''}`,
     {
       method: 'GET',
       headers: {

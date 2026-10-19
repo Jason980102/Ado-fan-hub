@@ -7,7 +7,7 @@ from analytics_growth import router as analytics_growth_router
 from tiktok_avatar import router as tiktok_avatar_router
 from official_images import router as official_images_router
 from analytics import router as analytics_router
-from typing import Annotated
+from typing import Annotated, Literal
 from contextlib import asynccontextmanager
 
 from mv_sync import MVSyncScheduler
@@ -87,12 +87,33 @@ def list_news(
     category: NewsCategory | None = None,
     limit: Annotated[int, Query(ge=1, le=100)] = 20,
     offset: Annotated[int, Query(ge=0)] = 0,
+    source: Literal[
+        "all",
+        "x",
+        "x_staff",
+        "x_ado",
+        "x_fanclub",
+        "instagram",
+        "fanclub",
+        "fanclub_shop",
+        "official_shop",
+        "youtube",
+        "universal",
+    ] = "all",
+    q: Annotated[str, Query(max_length=100)] = "",
 ):
     try:
+        from services.news_service import search_news_titles
+        if q.strip():
+            return search_news_titles(
+                category=category, limit=limit, offset=offset,
+                source=source, query=q,
+            )
         return list_cached_news(
             category=category,
             limit=limit,
             offset=offset,
+            source=source,
         )
     except Exception:
         # Do not expose upstream URLs or internal errors to clients.

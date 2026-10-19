@@ -8,6 +8,7 @@ import ExploreIcon from '@/components/explore-icon';
 import { useState } from 'react';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
+import * as WebBrowser from 'expo-web-browser';
 import { Linking, Platform, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -100,10 +101,17 @@ export default function ExploreScreen() {
     { id: 'discord', title: 'Discord', subtitle: text.discordNote, url: 'https://discord.com/invite/ado1024' },
   ] as const;
 
-  async function openLink(url: string) {
+  async function openLink(url: string, officialMember = false) {
     setError(false);
     try {
-      await Linking.openURL(url);
+      if (officialMember && Platform.OS !== 'web') {
+        await WebBrowser.openBrowserAsync(url, {
+          createTask: false,
+          showTitle: true,
+        });
+      } else {
+        await Linking.openURL(url);
+      }
     } catch {
       setError(true);
     }
@@ -177,7 +185,7 @@ export default function ExploreScreen() {
         <View style={[styles.links, Platform.OS === 'web' && styles.webLinks]} onLayout={(event) => setLinksWidth(event.nativeEvent.layout.width)}>
           {links.map((link) => (
             <AnimatedPressable key={link.url} accessibilityRole="link"
-              onPress={() => void openLink(link.url)} style={[styles.card, Platform.OS === 'web' && styles.linkCard, linkWidth !== undefined && { width: linkWidth }]}>
+              onPress={() => void openLink(link.url, link.id === 'member')} style={[styles.card, Platform.OS === 'web' && styles.linkCard, linkWidth !== undefined && { width: linkWidth }]}>
               <View style={styles.cardHeading}>
                   <OfficialLinkImage source={link.id} />
                   <View style={styles.linkDetails}>

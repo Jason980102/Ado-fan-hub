@@ -37,3 +37,4 @@ apps/api/data/fx.sqlite3*
 apps/api/data/shop-state.sqlite3*
 google-services.json
 GoogleService-Info.plist
+/.env.db.local

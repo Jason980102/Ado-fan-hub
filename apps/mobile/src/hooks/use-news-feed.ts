@@ -1,12 +1,12 @@
 import { usePageData } from '@/hooks/use-page-data';
 import { useRoseMotion } from '@/contexts/rose-motion-context';
 import { useCallback, useRef, useState } from 'react';
-import { getNews, type NewsItem } from '@/services/news-api';
+import { getNews, type NewsItem, type NewsSource } from '@/services/news-api';
 
 type Mode = 'initial' | 'refresh' | 'more';
 const PAGE_SIZE = 10;
 
-export function useNewsFeed() {
+export function useNewsFeed(source: NewsSource = 'all', searchQuery = '') {
   const { restartGrowth } = useRoseMotion();
   const [items, setItems] = useState<NewsItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -34,7 +34,7 @@ export function useNewsFeed() {
     const timeout = setTimeout(() => controller.abort(), 45000);
 
     try {
-      const result = await getNews(PAGE_SIZE, controller.signal, offset);
+      const result = await getNews(PAGE_SIZE, controller.signal, offset, source, searchQuery);
       if (request.current !== controller || controller.signal.aborted) return;
       const next = offset + result.items.length;
       nextOffset.current = next;
@@ -63,10 +63,17 @@ export function useNewsFeed() {
         setLoadingMore(false);
       }
     }
-  }, [restartGrowth]);
+  }, [restartGrowth, source, searchQuery]);
 
   usePageData(useCallback(() => {
+    setLoading(true);
     setRefreshing(true);
+    setItems([]);
+    setHasMore(false);
+    setFailedImages([]);
+    nextOffset.current = 0;
+    canLoadMore.current = false;
+    appendFailed.current = false;
     void load('initial');
     return () => {
       const active = request.current;

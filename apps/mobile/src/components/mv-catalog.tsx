@@ -1,3 +1,4 @@
+import HorizontalFilterRow from '@/components/horizontal-filter-row';
 import { FanColors } from '@/constants/fan-theme';
 import AnimatedPressable from '@/components/animated-pressable';
 import { useMemo, useState } from 'react';
@@ -63,7 +64,7 @@ export default function MvCatalog({ videos, formatNumber, onSelect }: Props) {
         )}
       </View>
       <Text numberOfLines={1} style={styles.hint}>{text.hint}</Text>
-      <View style={styles.filters}>
+      <HorizontalFilterRow contentContainerStyle={styles.filters}>
         {(['all', ...mvCategories] as const).map((item) => (
           <AnimatedPressable key={item} accessibilityRole="button"
             accessibilityState={{ selected: category === item }}
@@ -72,8 +73,8 @@ export default function MvCatalog({ videos, formatNumber, onSelect }: Props) {
             <Text style={styles.accent}>{text[item]}</Text>
           </AnimatedPressable>
         ))}
-      </View>
-      <View style={styles.filters}>
+      </HorizontalFilterRow>
+      <HorizontalFilterRow contentContainerStyle={styles.filters}>
         {(['newest', 'oldest', 'popular'] as const).map((order) => (
           <AnimatedPressable key={order} accessibilityRole="button"
             accessibilityState={{ selected: sortOrder === order }}
@@ -82,7 +83,7 @@ export default function MvCatalog({ videos, formatNumber, onSelect }: Props) {
             <Text style={styles.accent}>{text[order]}</Text>
           </AnimatedPressable>
         ))}
-      </View>
+      </HorizontalFilterRow>
       <Text style={styles.muted}>{text.count}{formatNumber(matches.length)}</Text>
       {matches.length === 0 && <View style={styles.details}>
         <Text style={styles.muted}>{text.empty}</Text>
@@ -146,8 +147,8 @@ const styles = StyleSheet.create({
   title: { color: FanColors.text, fontSize: 20, fontWeight: '700' },
   muted: { color: FanColors.muted, fontSize: 13, lineHeight: 20 },
   accent: { color: FanColors.accent, fontSize: 13 },
-  filters: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  button: { padding: 10, borderRadius: 12, backgroundColor: FanColors.surface,
+  filters: { flexDirection: 'row', gap: 8, paddingVertical: 2 },
+  button: { flexShrink: 0, padding: 10, borderRadius: 12, backgroundColor: FanColors.surface,
     borderWidth: 1, borderColor: FanColors.border, alignSelf: 'flex-start' },
   selected: { backgroundColor: FanColors.selected, borderColor: FanColors.accent },
   searchRow: { flexDirection: 'row', alignItems: 'center', gap: 10,

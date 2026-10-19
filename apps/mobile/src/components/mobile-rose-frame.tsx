@@ -19,9 +19,13 @@ const SafePath = forwardRef<ComponentRef<typeof Path>, SafeProps>(
 );
 const AnimatedPath = Animated.createAnimatedComponent(SafePath);
 
-export default function MobileRoseFrame() {
+export default function MobileRoseFrame({ staticMode = false }: { staticMode?: boolean }) {
   const [size, setSize] = useState({ width: 0, height: 0 });
-  const { growth, sway } = useRoseMotion();
+  const staticGrowth = useState(() => new Animated.Value(1))[0];
+  const staticSway = useState(() => new Animated.Value(0))[0];
+  const motion = useRoseMotion();
+  const growth = staticMode ? staticGrowth : motion.growth;
+  const sway = staticMode ? staticSway : motion.sway;
 
 
   if (Platform.OS === 'web') return null;

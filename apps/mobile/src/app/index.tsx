@@ -1,4 +1,5 @@
 import { refreshPageData } from '@/hooks/use-page-data';
+import SupportCard from '@/components/support-card';
 import { compactNumber } from '@/components/analytics-overview';
 import { useHomeRanking } from '@/hooks/use-home-ranking';
 import { getAnalytics } from '@/services/analytics-api';
@@ -182,6 +183,7 @@ export default function HomeScreen() {
        <Pressable accessibilityRole="button" onPress={() => router.push('/news')} style={s.bottomAll}>
          <Text style={s.link}>{w.all} →</Text>
        </Pressable>
+      <SupportCard />
       <Text style={s.footer}>{w.footer}</Text>
     </RoseScrollView>
   </SafeAreaView>;

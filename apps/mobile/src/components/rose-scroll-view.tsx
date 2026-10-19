@@ -4,6 +4,7 @@ import MobileRoseFrame from '@/components/mobile-rose-frame';
 
 type RoseScrollViewProps = ScrollViewProps & {
   showMobileRoseFrame?: boolean;
+  staticRoseFrame?: boolean;
 };
 
 const RoseScrollView = forwardRef<ScrollView, RoseScrollViewProps>(
@@ -12,6 +13,7 @@ const RoseScrollView = forwardRef<ScrollView, RoseScrollViewProps>(
     contentContainerStyle,
     onLayout,
     showMobileRoseFrame = true,
+    staticRoseFrame = false,
     ...props
   }, ref) {
     const [viewportHeight, setViewportHeight] = useState(0);
@@ -29,7 +31,7 @@ const RoseScrollView = forwardRef<ScrollView, RoseScrollViewProps>(
           contentContainerStyle,
           { position: 'relative' },
         ]}>
-        {showMobileRoseFrame && <MobileRoseFrame />}
+        {showMobileRoseFrame && <MobileRoseFrame staticMode={staticRoseFrame} />}
         {children}
       </ScrollView>
     );
