@@ -4,7 +4,8 @@ import time
 from datetime import datetime, timezone
 
 import mv_catalog as catalog
-from mv_store import load_catalog, save_catalog
+from services.mv_catalog_db import load_catalog_from_db
+from services.mv_persistence import persist_mv_catalog
 
 
 def sync_recent_feed():
@@ -18,23 +19,9 @@ def sync_recent_feed():
     with catalog._lock:
         api_key, channel_id, _ = catalog._configuration()
 
-        saved = load_catalog()
+        # PostgreSQL is the authoritative MV catalog.
+        base = load_catalog_from_db()
 
-        if saved is None:
-            raise RuntimeError(
-                "No saved MV catalog. Run a full catalog sync first."
-            )
-
-        base = catalog.CatalogResponse.model_validate(saved)
-
-        # A newer complete in-memory response takes priority.
-        memory = catalog._cache
-        if (
-            memory is not None
-            and not memory.partial
-            and memory.fetched_at > base.fetched_at
-        ):
-            base = memory.model_copy(deep=True)
 
         if base.partial or not base.videos:
             raise RuntimeError("No complete MV catalog available")
@@ -137,7 +124,7 @@ def sync_recent_feed():
 
         # Persist first. Only publish the new memory cache after
         # the transaction succeeds.
-        save_catalog(updated)
+        persist_mv_catalog(updated)
 
         catalog._cache = updated
         catalog._cache_until = time.monotonic() + 600

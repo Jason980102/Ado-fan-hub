@@ -1,3 +1,5 @@
+"""Offline tests for PostgreSQL MV catalog API persistence."""
+
 import unittest
 from datetime import datetime, timezone
 from unittest.mock import patch
@@ -11,7 +13,6 @@ class MVPersistenceTests(unittest.TestCase):
         self.previous_until = catalog._cache_until
         catalog._cache = None
         catalog._cache_until = 0.0
-
         self.addCleanup(self.restore_cache)
 
     def restore_cache(self):
@@ -22,14 +23,7 @@ class MVPersistenceTests(unittest.TestCase):
         return catalog.CatalogResponse(
             fetched_at=datetime.now(timezone.utc),
             partial=partial,
-            sources=[
-                catalog.CatalogSource(
-                    id="official",
-                    title="Ado official uploads",
-                    available=True,
-                    item_count=1,
-                ),
-            ],
+            sources=[],
             videos=[
                 catalog.CatalogVideo(
                     id="7DBSMzbPQzc",
@@ -39,115 +33,66 @@ class MVPersistenceTests(unittest.TestCase):
                     thumbnail_url=None,
                     view_count=100,
                     like_count=10,
-                    url=(
-                        "https://www.youtube.com/watch?v="
-                        "7DBSMzbPQzc"
-                    ),
+                    url="https://www.youtube.com/watch?v=7DBSMzbPQzc",
                     channel_id="UCln9P4Qm3-EAY4aiEPmRwEA",
                     channel_title="Ado",
-                    playlist_ids=["official"],
+                    playlist_ids=[],
                     aliases=[],
-                ),
+                )
             ],
             unavailable_video_ids=[],
         )
 
-    def test_success_saves_complete_catalog(self):
-        result = self.sample()
+    @patch("services.mv_catalog_db.load_catalog_from_db")
+    def test_success_reads_postgres(self, reader):
+        reader.return_value = self.sample()
 
-        with (
-            patch.object(
-                catalog, "_configuration",
-                return_value=("key", "channel", []),
-            ),
-            patch.object(
-                catalog, "_fetch_catalog",
-                return_value=result,
-            ),
-            patch.object(catalog, "save_catalog") as save,
-        ):
-            response = catalog.mv_catalog()
+        response = catalog.mv_catalog()
 
         self.assertEqual(len(response.videos), 1)
-        self.assertFalse(response.cached)
-        save.assert_called_once_with(result)
-
-    def test_failed_youtube_restores_sqlite(self):
-        saved = self.sample()
-
-        with (
-            patch.object(
-                catalog, "_configuration",
-                return_value=("key", "channel", []),
-            ),
-            patch.object(
-                catalog, "_fetch_catalog",
-                side_effect=ValueError("upstream unavailable"),
-            ),
-            patch.object(
-                catalog, "load_catalog",
-                return_value=saved.model_dump(mode="json"),
-            ),
-        ):
-            response = catalog.mv_catalog()
-
         self.assertTrue(response.cached)
-        self.assertEqual(
-            response.videos[0].id,
-            "7DBSMzbPQzc",
-        )
+        reader.assert_called_once()
 
-    def test_partial_does_not_overwrite_sqlite(self):
-        result = self.sample(partial=True)
-
-        with (
-            patch.object(
-                catalog, "_configuration",
-                return_value=("key", "channel", []),
-            ),
-            patch.object(
-                catalog, "_fetch_catalog",
-                return_value=result,
-            ),
-            patch.object(catalog, "save_catalog") as save,
-        ):
-            response = catalog.mv_catalog()
-
-        self.assertTrue(response.partial)
-        save.assert_not_called()
-
-    def test_memory_fallback_precedes_sqlite(self):
+    @patch("services.mv_catalog_db.load_catalog_from_db")
+    def test_postgres_failure_uses_memory(self, reader):
         catalog._cache = self.sample()
-        catalog._cache_until = 0
+        catalog._cache_until = 0.0
+        reader.side_effect = RuntimeError("PostgreSQL unavailable")
 
-        with (
-            patch.object(
-                catalog, "_configuration",
-                side_effect=ValueError("missing config"),
-            ),
-            patch.object(catalog, "load_catalog") as load,
-        ):
-            response = catalog.mv_catalog()
+        response = catalog.mv_catalog()
 
+        self.assertEqual(response.videos[0].id, "7DBSMzbPQzc")
         self.assertTrue(response.cached)
+
+    @patch("services.mv_catalog_db.load_catalog_from_db")
+    def test_partial_postgres_catalog_rejected(self, reader):
+        reader.return_value = self.sample(partial=True)
+
+        with self.assertRaises(catalog.HTTPException) as ctx:
+            catalog.mv_catalog()
+
+        self.assertEqual(ctx.exception.status_code, 503)
+        self.assertIsNone(catalog._cache)
+
+    @patch("services.mv_catalog_db.load_catalog_from_db")
+    def test_valid_memory_cache_precedes_postgres(self, reader):
+        catalog._cache = self.sample()
+        catalog._cache_until = float("inf")
+
+        response = catalog.mv_catalog()
+
         self.assertEqual(len(response.videos), 1)
-        load.assert_not_called()
+        self.assertTrue(response.cached)
+        reader.assert_not_called()
 
-    def test_empty_store_returns_503(self):
-        with (
-            patch.object(
-                catalog, "_configuration",
-                side_effect=ValueError("missing config"),
-            ),
-            patch.object(
-                catalog, "load_catalog",
-                return_value=None,
-            ),
-        ):
-            with self.assertRaises(catalog.HTTPException) as error:
-                catalog.mv_catalog()
+    @patch("services.mv_catalog_db.load_catalog_from_db")
+    def test_unavailable_postgres_returns_503(self, reader):
+        reader.side_effect = RuntimeError("PostgreSQL unavailable")
 
-        self.assertEqual(error.exception.status_code, 503)
+        with self.assertRaises(catalog.HTTPException) as ctx:
+            catalog.mv_catalog()
+
+        self.assertEqual(ctx.exception.status_code, 503)
 
 
 if __name__ == "__main__":

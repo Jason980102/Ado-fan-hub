@@ -84,9 +84,9 @@ class IncrementalTests(unittest.TestCase):
         base = self.sample()
 
         with (
-            patch("mv_incremental.load_catalog",
-                  return_value=base.model_dump(mode="json")),
-            patch("mv_incremental.save_catalog") as save,
+            patch("mv_incremental.load_catalog_from_db",
+                  return_value=base.model_copy(deep=True)),
+            patch("mv_incremental.persist_mv_catalog") as save,
             patch.object(catalog, "_configuration",
                          return_value=("key", CHANNEL, [])),
             patch.object(catalog, "_recent_feed_video_ids",
@@ -117,9 +117,9 @@ class IncrementalTests(unittest.TestCase):
         base = self.sample()
 
         with (
-            patch("mv_incremental.load_catalog",
-                  return_value=base.model_dump(mode="json")),
-            patch("mv_incremental.save_catalog") as save,
+            patch("mv_incremental.load_catalog_from_db",
+                  return_value=base.model_copy(deep=True)),
+            patch("mv_incremental.persist_mv_catalog") as save,
             patch.object(catalog, "_configuration",
                          return_value=("key", CHANNEL, [])),
             patch.object(catalog, "_recent_feed_video_ids",
@@ -136,9 +136,9 @@ class IncrementalTests(unittest.TestCase):
         base = self.sample()
 
         with (
-            patch("mv_incremental.load_catalog",
-                  return_value=base.model_dump(mode="json")),
-            patch("mv_incremental.save_catalog") as save,
+            patch("mv_incremental.load_catalog_from_db",
+                  return_value=base.model_copy(deep=True)),
+            patch("mv_incremental.persist_mv_catalog") as save,
             patch.object(catalog, "_configuration",
                          return_value=("key", CHANNEL, [])),
             patch.object(catalog, "_recent_feed_video_ids",
@@ -158,9 +158,9 @@ class IncrementalTests(unittest.TestCase):
         short["snippet"]["title"] = "Promo #Shorts"
 
         with (
-            patch("mv_incremental.load_catalog",
-                  return_value=base.model_dump(mode="json")),
-            patch("mv_incremental.save_catalog") as save,
+            patch("mv_incremental.load_catalog_from_db",
+                  return_value=base.model_copy(deep=True)),
+            patch("mv_incremental.persist_mv_catalog") as save,
             patch.object(catalog, "_configuration",
                          return_value=("key", CHANNEL, [])),
             patch.object(catalog, "_recent_feed_video_ids",

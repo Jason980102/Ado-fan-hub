@@ -62,7 +62,7 @@ class FullUploadsTests(unittest.TestCase):
                 catalog, "_fetch_catalog",
                 return_value=result,
             ),
-            patch("mv_uploads.save_catalog") as save,
+            patch("mv_uploads.persist_mv_catalog") as save,
         ):
             count = sync_full_uploads()
 
@@ -83,7 +83,7 @@ class FullUploadsTests(unittest.TestCase):
                 catalog, "_fetch_catalog",
                 return_value=self.sample(partial=True),
             ),
-            patch("mv_uploads.save_catalog") as save,
+            patch("mv_uploads.persist_mv_catalog") as save,
         ):
             with self.assertRaises(RuntimeError):
                 sync_full_uploads()
@@ -101,7 +101,7 @@ class FullUploadsTests(unittest.TestCase):
                 catalog, "_fetch_catalog",
                 return_value=self.sample(with_video=False),
             ),
-            patch("mv_uploads.save_catalog") as save,
+            patch("mv_uploads.persist_mv_catalog") as save,
         ):
             with self.assertRaises(RuntimeError):
                 sync_full_uploads()
@@ -123,7 +123,7 @@ class FullUploadsTests(unittest.TestCase):
                 return_value=self.sample(),
             ),
             patch(
-                "mv_uploads.save_catalog",
+                "mv_uploads.persist_mv_catalog",
                 side_effect=OSError("simulated database error"),
             ),
         ):

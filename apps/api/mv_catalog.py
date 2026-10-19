@@ -24,6 +24,7 @@ SOURCES = {
     'PLaxauk3chSWj6Lg0HZtQ8mhTeGRyopOl5': ('LIVE', 'live'),
     'PLaxauk3chSWizBh8KxPj83Ue03qy0A_Xv': ('Remix', 'other'),
     'PLaxauk3chSWjVFK0vMo9TGiOzyYZOXt9j': ('出張', None),
+    'PLaxauk3chSWgJmo2hBhN34rO8sUEwWiQx': ('\U0001f3a4\u7d20\u6575\u306a\u6b4c\u3063\u3066\u307f\u305f', None),
 }
 # Human-reviewed publisher metadata, not keyword classification. Only applies if
 # the ID is still a member of an approved playlist. No view counts are stored here.
@@ -427,72 +428,48 @@ _lock = Lock()
 
 @router.get('/catalog', response_model=CatalogResponse)
 def mv_catalog():
+    """Serve the canonical MV catalog from PostgreSQL.
+
+    Opening the MV page never triggers a YouTube API request.
+    """
     global _cache, _cache_until
+
+    # Lazy import avoids a circular dependency:
+    # mv_catalog_db imports CatalogResponse from this module.
+    from services.mv_catalog_db import load_catalog_from_db
+    from sqlalchemy.exc import SQLAlchemyError
 
     with _lock:
         now = time.monotonic()
 
         if _cache is not None and now < _cache_until:
-            return _cache.model_copy(update={'cached': True})
+            return _cache.model_copy(update={"cached": True})
 
         try:
-            api_key, channel_id, _ = _configuration()
-            result = _fetch_catalog(api_key, channel_id)
+            restored = load_catalog_from_db()
+
+            if restored.partial or not restored.videos:
+                raise RuntimeError("Incomplete PostgreSQL MV catalog")
 
         except (
-            HTTPException,
-            HTTPError,
-            URLError,
-            TimeoutError,
+            SQLAlchemyError,
             OSError,
             ValueError,
-            KeyError,
             TypeError,
+            RuntimeError,
         ):
-            # Prefer an existing in-memory result. A failed refresh
-            # must not erase already discovered videos.
+            # Keep an already-loaded catalog briefly available
+            # if PostgreSQL is temporarily unreachable.
             if _cache is not None and _cache.videos:
                 _cache_until = time.monotonic() + 60
-                return _cache.model_copy(update={'cached': True})
+                return _cache.model_copy(update={"cached": True})
 
-            # After a process restart, restore the last saved result.
-            try:
-                saved = load_catalog()
-                restored = (
-                    CatalogResponse.model_validate(saved)
-                    if saved is not None
-                    else None
-                )
-            except (
-                OSError,
-                sqlite3.Error,
-                ValueError,
-                TypeError,
-            ):
-                restored = None
+            raise HTTPException(
+                status_code=503,
+                detail="MV catalog is temporarily unavailable",
+            ) from None
 
-            if restored is None or not restored.videos:
-                raise HTTPException(
-                    503,
-                    'MV catalog is temporarily unavailable',
-                ) from None
+        _cache = restored
+        _cache_until = time.monotonic() + 60
 
-            _cache = restored
-            _cache_until = time.monotonic() + 60
-            return restored.model_copy(update={'cached': True})
-
-        # Only a complete, non-empty result can replace the
-        # last successful persistent snapshot.
-        if not result.partial and result.videos:
-            try:
-                save_catalog(result)
-            except (OSError, sqlite3.Error):
-                logging.getLogger(__name__).warning(
-                    "MV catalog snapshot save failed"
-                )
-
-        _cache = result
-        _cache_until = (
-            time.monotonic() + (60 if result.partial else 600)
-        )
-        return result
+        return restored.model_copy(update={"cached": True})

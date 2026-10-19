@@ -53,7 +53,7 @@ class CatalogTests(unittest.TestCase):
             result = catalog._fetch_catalog('test-key', 'owner')
         self.assertTrue(result.partial)
         self.assertEqual(len(result.videos), 1)
-        self.assertEqual(len(result.videos[0].playlist_ids), 4)
+        self.assertEqual(len(result.videos[0].playlist_ids), len(catalog.SOURCES) - 1)
         self.assertEqual(result.unavailable_video_ids, ['unavailable'])
         self.assertNotIn('r-IIISSOhik', result.unavailable_video_ids)
 
@@ -280,12 +280,26 @@ class CatalogTests(unittest.TestCase):
         self.assertFalse(catalog._confirmed_short(item))
 
     def test_catalog_never_saves_analytics_snapshots(self):
-        with patch.object(catalog, '_configuration', return_value=('test-key', 'owner', [])), \
-             patch.object(catalog, '_fetch_catalog', return_value=catalog.CatalogResponse(
-                 fetched_at='2026-01-01T00:00:00Z', sources=[], videos=[], unavailable_video_ids=[])), \
-             patch('analytics.save_channel_snapshot') as save:
-            with patch.object(catalog, '_cache', None):
+        empty = catalog.CatalogResponse(
+            fetched_at="2026-01-01T00:00:00Z",
+            sources=[],
+            videos=[],
+            unavailable_video_ids=[],
+        )
+
+        with (
+            patch(
+                "services.mv_catalog_db.load_catalog_from_db",
+                return_value=empty,
+            ),
+            patch("analytics.save_channel_snapshot") as save,
+            patch.object(catalog, "_cache", None),
+            patch.object(catalog, "_cache_until", 0.0),
+        ):
+            with self.assertRaises(catalog.HTTPException) as ctx:
                 catalog.mv_catalog()
+
+            self.assertEqual(ctx.exception.status_code, 503)
             save.assert_not_called()
 
 

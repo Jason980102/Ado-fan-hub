@@ -5,7 +5,8 @@ import time
 from datetime import datetime, timezone
 
 import mv_catalog as catalog
-from mv_store import load_catalog, save_catalog
+from services.mv_catalog_db import load_catalog_from_db
+from services.mv_playlist_writer import save_playlist_memberships
 
 
 def sync_official_playlists():
@@ -17,19 +18,9 @@ def sync_official_playlists():
     with catalog._lock:
         api_key, channel_id, _ = catalog._configuration()
 
-        saved = load_catalog()
-        if saved is None:
-            raise RuntimeError("No saved catalog; full sync required")
+        # PostgreSQL is the authoritative MV catalog.
+        base = load_catalog_from_db()
 
-        base = catalog.CatalogResponse.model_validate(saved)
-
-        memory = catalog._cache
-        if (
-            memory is not None
-            and not memory.partial
-            and memory.fetched_at > base.fetched_at
-        ):
-            base = memory.model_copy(deep=True)
 
         if base.partial or not base.videos:
             raise RuntimeError("No complete catalog available")
@@ -89,77 +80,15 @@ def sync_official_playlists():
                 item_count=len(checked),
             )
 
-        updated = base.model_copy(deep=True)
-        updated.sources = [
-            playlist_sources.get(source.id, source)
-            for source in updated.sources
-        ]
+        # Persist playlist-only fields using the database transaction lock.
+        # Never overwrite title, statistics, thumbnails, or aliases.
+        changes = save_playlist_memberships(
+            memberships,
+            playlist_sources,
+        )
 
-        existing_sources = {s.id for s in updated.sources}
-
-        for pid, source in playlist_sources.items():
-            if pid not in existing_sources:
-                updated.sources.append(source)
-
-        changes = 0
-
-        for video in updated.videos:
-            # Preserve Uploads, RSS and other non-category sources.
-            non_playlist = [
-                pid for pid in video.playlist_ids
-                if pid not in catalog.SOURCES
-            ]
-
-            official = [
-                pid for pid, ids in memberships.items()
-                if video.id in ids
-            ]
-
-            new_ids = list(dict.fromkeys(
-                non_playlist + official
-            ))
-
-            categories = list(dict.fromkeys(
-                catalog.SOURCES[pid][1]
-                for pid in official
-                if catalog.SOURCES[pid][1]
-            ))
-
-            # Preserve the existing, human-verified
-            # collaboration exceptions only where a verified
-            # official playlist still contains the video.
-            if official:
-                for category in catalog.VERIFIED_CATEGORIES.get(
-                    video.id, []
-                ):
-                    if category not in categories:
-                        categories.append(category)
-
-            if not categories:
-                categories = ["unclassified"]
-
-            membership_changed = (
-                set(video.playlist_ids) != set(new_ids)
-            )
-            category_changed = (
-                set(video.categories) != set(categories)
-            )
-
-            if membership_changed or category_changed:
-                changes += 1
-
-                if membership_changed:
-                    video.playlist_ids = new_ids
-
-                if category_changed:
-                    video.categories = categories
-
-        updated.fetched_at = datetime.now(timezone.utc)
-        updated.cached = False
-        updated.partial = False
-
-        # Persist before publishing to the in-memory API cache.
-        save_catalog(updated)
+        # Refresh from PostgreSQL to avoid caching stale video metadata.
+        updated = load_catalog_from_db()
 
         catalog._cache = updated
         catalog._cache_until = time.monotonic() + 600

@@ -1,5 +1,7 @@
 """Shared persistent data models for Ado Fan Hub."""
 
+from sqlalchemy.dialects.postgresql import JSONB
+
 from decimal import Decimal
 
 import uuid
@@ -140,10 +142,25 @@ class MusicVideo(Base):
         String(1000), nullable=False
     )
     channel_id: Mapped[str | None] = mapped_column(String(100))
+    channel_title: Mapped[str | None] = mapped_column(String(300))
     published_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True)
     )
     thumbnail_url: Mapped[str | None] = mapped_column(Text)
+
+    categories: Mapped[list] = mapped_column(
+        JSONB, nullable=False, default=list
+    )
+    playlist_ids: Mapped[list] = mapped_column(
+        JSONB, nullable=False, default=list
+    )
+    aliases: Mapped[list] = mapped_column(
+        JSONB, nullable=False, default=list
+    )
+
+    view_count: Mapped[int | None] = mapped_column(BigInteger)
+    like_count: Mapped[int | None] = mapped_column(BigInteger)
+
     last_synced_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )

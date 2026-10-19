@@ -2,7 +2,7 @@
 
 import time
 import mv_catalog as catalog
-from mv_store import save_catalog
+from services.mv_persistence import persist_mv_catalog
 
 
 def sync_full_uploads():
@@ -27,8 +27,8 @@ def sync_full_uploads():
                 "Full MV synchronization returned no videos"
             )
 
-        # Save first; publish in-memory only after SQLite succeeds.
-        save_catalog(result)
+        # PostgreSQL must commit before publishing the new cache.
+        persist_mv_catalog(result)
 
         catalog._cache = result
         catalog._cache_until = time.monotonic() + 600

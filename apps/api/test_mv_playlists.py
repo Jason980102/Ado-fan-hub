@@ -74,34 +74,45 @@ class PlaylistSyncTests(unittest.TestCase):
             ]
         }
 
-    def run_sync(self, base, playlist_members,
-                 response=None):
-        if response is None:
-            response = self.metadata()
+    def run_sync(self, base, playlist_members, response=None):
+        metadata = response if response is not None else self.metadata()
+        memberships = playlist_members
+
+        stored = [base.model_copy(deep=True)]
+
+        def read_db():
+            return stored[0].model_copy(deep=True)
+
+        def write_db(official_memberships, playlist_sources):
+            from test_mv_playlist_sync_mock import simulate_playlist_write
+            count, updated = simulate_playlist_write(
+                stored[0], official_memberships, playlist_sources
+            )
+            stored[0] = updated
+            return count
 
         with (
-            patch(
-                "mv_playlists.load_catalog",
-                return_value=base.model_dump(mode="json"),
-            ),
-            patch("mv_playlists.save_catalog") as save,
+            patch("mv_playlists.load_catalog_from_db",
+                  side_effect=read_db),
+            patch("mv_playlists.save_playlist_memberships",
+                  side_effect=write_db) as save,
             patch.object(
                 catalog, "_configuration",
-                return_value=("key", CHANNEL, []),
+                return_value=("dummy-key", CHANNEL, []),
             ),
             patch.object(
                 catalog, "_youtube",
-                return_value=response,
+                return_value=metadata,
             ),
             patch.object(
                 catalog, "_playlist_video_ids",
-                side_effect=lambda key, pid:
-                    playlist_members.get(pid, []),
+                side_effect=lambda key, pid: memberships.get(pid, []),
             ),
         ):
             changed = sync_official_playlists()
 
-        return changed, save.call_args.args[0]
+        save.assert_called_once()
+        return changed, stored[0]
 
     def test_unclassified_becomes_original(self):
         original_pid = next(
@@ -168,10 +179,10 @@ class PlaylistSyncTests(unittest.TestCase):
 
         with (
             patch(
-                "mv_playlists.load_catalog",
-                return_value=base.model_dump(mode="json"),
+                "mv_playlists.load_catalog_from_db",
+                return_value=base.model_copy(deep=True),
             ),
-            patch("mv_playlists.save_catalog") as save,
+            patch("mv_playlists.save_playlist_memberships") as save,
             patch.object(
                 catalog, "_configuration",
                 return_value=("key", CHANNEL, []),
