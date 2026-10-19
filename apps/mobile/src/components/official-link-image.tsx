@@ -32,6 +32,7 @@ export default function OfficialLinkImage({ source }: { source: Source }) {
 function OfficialLinkImageContent({ source }: { source: Source }) {
   const [failed, setFailed] = useState(false);
   const [discordIcon, setDiscordIcon] = useState<string | null>(null);
+  const [tiktokCacheDay] = useState(() => Math.floor(Date.now() / 86400000));
   const local = officialLinkAssets[source];
   const base = process.env.EXPO_PUBLIC_API_URL || process.env.EXPO_PUBLIC_ANALYTICS_API_URL;
 
@@ -41,7 +42,7 @@ function OfficialLinkImageContent({ source }: { source: Source }) {
   const remoteUri = source === 'discord'
     ? discordIcon
     : hasBackendImage && base
-      ? `${base.replace(/\/+$/, '')}/api/official-images/${source}?v=${source === 'tiktok' ? Math.floor(Date.now() / 86400000) : 3}`
+      ? `${base.replace(/\/+$/, '')}/api/official-images/${source}?v=${source === 'tiktok' ? tiktokCacheDay : 3}`
       : null;
 
   useEffect(() => {
