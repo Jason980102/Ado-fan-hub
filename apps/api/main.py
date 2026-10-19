@@ -104,6 +104,24 @@ def list_news(
     q: Annotated[str, Query(max_length=100)] = "",
 ):
     try:
+        if source == "all" and (q.strip() or category is not None):
+            from services.all_news_search import search_all_news
+            return search_all_news(
+                category=category,
+                limit=limit,
+                offset=offset,
+                query=q,
+            )
+
+        if source == "youtube":
+            from services.youtube_news_catalog import list_youtube_catalog
+            return list_youtube_catalog(
+                category=category,
+                limit=limit,
+                offset=offset,
+                query=q,
+            )
+
         from services.news_service import search_news_titles
         if q.strip() or source in (
             "youtube", "x", "x_staff", "x_ado", "x_fanclub"

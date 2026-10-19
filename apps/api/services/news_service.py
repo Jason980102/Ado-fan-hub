@@ -303,6 +303,10 @@ _all_history_totals = None
 _all_history_expires_at = 0.0
 ALL_HISTORY_TTL_SECONDS = 600
 
+# Last successful complete YouTube catalog, for temporary PG outages only.
+YOUTUBE_HISTORY_STALE_SECONDS = 1800
+_youtube_history_snapshot = None
+
 
 def _all_sorted_items(sources):
     unique = {
@@ -318,12 +322,24 @@ def _all_sorted_items(sources):
 
 
 def _all_initialize():
-    # Reuse the existing resilient aggregator for YouTube metadata.
-    recent = get_cached_news()
-    youtube = [
-        item for item in recent
-        if item.source_name == NEWS_SOURCE_NAMES["youtube"]
-    ]
+    # PostgreSQL is authoritative. The snapshot is only an outage fallback.
+    from services.youtube_news_catalog import load_all_youtube_news
+
+    global _youtube_history_snapshot
+
+    try:
+        youtube = load_all_youtube_news()
+    except Exception:
+        snapshot = _youtube_history_snapshot
+        if (
+            snapshot is not None
+            and monotonic() - snapshot[0] <= YOUTUBE_HISTORY_STALE_SECONDS
+        ):
+            youtube = list(snapshot[1])
+        else:
+            youtube = []
+    else:
+        _youtube_history_snapshot = (monotonic(), list(youtube))
 
     fanclub, fanclub_total = list_fanclub_history(0, 60)
     universal, universal_total = list_universal_history(0, 100)
