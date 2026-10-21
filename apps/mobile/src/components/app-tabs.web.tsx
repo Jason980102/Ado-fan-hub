@@ -24,6 +24,7 @@ export default function AppTabs() {
       <TabSlot style={{ height: '100%' }} />
       <TabList asChild style={{ display: 'none' }}>
         <CustomTabList>
+          <TabTrigger name="reports" href="/reports" />
           <TabTrigger name="analytics" href="/analytics" />
           <TabTrigger name="following" href="/following" />
           <TabTrigger name="about" href="/about" />

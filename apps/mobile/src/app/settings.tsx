@@ -2,6 +2,8 @@ import { fanPageHeader } from '@/constants/fan-page-header';
 import RoseScrollView from '@/components/rose-scroll-view';
 import { FanColors } from '@/constants/fan-theme';
 import { useState } from 'react';
+import { router } from 'expo-router';
+import { reportsCopy } from '@/constants/reports-copy';
 import {
   ActivityIndicator,
   Alert,
@@ -28,7 +30,7 @@ import type { UserPreferences } from '@/services/preferences';
 
 
 export default function SettingsScreen() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { preferences, loading, updatePreferences } = usePreferences();
 
   const [draft, setDraft] = useState<UserPreferences>(preferences);
@@ -110,6 +112,10 @@ export default function SettingsScreen() {
             value={getOptionLabel(draft.timeZone, timeZoneOptions)}
             onPress={() => changeSetting('timeZone', timeZoneOptions)}
           />
+        </View>
+
+        <View style={styles.card}>
+          <SettingRow label={reportsCopy(i18n.resolvedLanguage || i18n.language).heading} value={reportsCopy(i18n.resolvedLanguage || i18n.language).records} onPress={() => router.push('/reports')} />
         </View>
 
         <Text style={styles.hint}>

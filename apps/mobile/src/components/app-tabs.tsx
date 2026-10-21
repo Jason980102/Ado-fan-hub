@@ -104,6 +104,7 @@ export default function AppTabs() {
           ),
         }} />
       ))}
+      <Tabs.Screen name="reports" options={{ href: null, title: "Reports" }} />
       <Tabs.Screen name="analytics" options={{ href: null, title: t('analytics:title') }} />
       <Tabs.Screen name="following" options={{ href: null, title: t('following') }} />
       <Tabs.Screen name="news" options={{ href: null, title: t('news') }} />

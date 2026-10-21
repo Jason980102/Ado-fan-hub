@@ -8,6 +8,8 @@ from analytics_growth import router as analytics_growth_router
 from tiktok_avatar import router as tiktok_avatar_router
 from official_images import router as official_images_router
 from analytics import router as analytics_router
+from reports_api import router as reports_router
+from reports_body_limit import ReportsBodyLimit
 from typing import Annotated, Literal
 from contextlib import asynccontextmanager
 
@@ -56,6 +58,7 @@ app = FastAPI(
     lifespan=mv_lifespan,
 )
 
+app.add_middleware(ReportsBodyLimit)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -66,7 +69,7 @@ app.add_middleware(
         "http://192.168.4.27:8081",
         "http://192.168.4.27:8082",
     ],
-    allow_methods=["GET", "PUT", "DELETE"],
+    allow_methods=["GET", "POST", "PUT", "DELETE"],
     allow_headers=["Accept", "Content-Type", "Authorization"],
 )
 
@@ -145,6 +148,7 @@ def list_news(
 
 app.include_router(fx_rates_router)
 app.include_router(analytics_router)
+app.include_router(reports_router)
 app.include_router(analytics_growth_router)
 app.include_router(tiktok_avatar_router)
 app.include_router(official_images_router)
