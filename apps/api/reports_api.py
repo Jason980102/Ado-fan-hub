@@ -133,6 +133,14 @@ def postgres_failure(error):
             "Too many requests; try later",
             headers={"Retry-After": str(error.retry_after)},
         ) from None
+    # Log only the exception type and PostgreSQL SQLSTATE.
+    # Never log credentials, SQL parameters, tokens or report contents.
+    import logging
+    logging.getLogger("ado.reports").error(
+        "Reports backend failure: type=%s sqlstate=%s",
+        type(error).__name__,
+        getattr(error, "sqlstate", None),
+    )
     raise HTTPException(503, "Reports temporarily unavailable") from None
 
 @router.post("", status_code=201)
