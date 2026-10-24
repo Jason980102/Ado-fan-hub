@@ -5,7 +5,7 @@ from urllib.parse import urlsplit, urlunsplit
 from models import NewsCategory, NewsItem
 
 
-SOURCE_NAME = "Universal Music Japan"
+SOURCE_NAME = "UNIVERSAL MUSIC JAPAN"
 OFFICIAL_HOST = "www.universal-music.co.jp"
 NEWS_PATH = "/ado/news/"
 

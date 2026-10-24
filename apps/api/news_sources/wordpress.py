@@ -140,3 +140,58 @@ def fetch_official_news(limit: int = 10) -> list[NewsItem]:
         raise ValueError("Unexpected WordPress API response")
 
     return [parse_post(post) for post in posts]
+
+def fetch_official_news_page(
+    page: int = 1,
+    limit: int = 20,
+) -> tuple[list[NewsItem], int]:
+    """Fetch a real WordPress page with its upstream total."""
+    from urllib.parse import urlencode
+
+    if page < 1 or not 1 <= limit <= 100:
+        raise ValueError("Invalid WordPress pagination")
+
+    query = urlencode({
+        "per_page": limit,
+        "page": page,
+        "orderby": "date",
+        "order": "desc",
+        "_fields": "id,date_gmt,link,title,excerpt,categories,content",
+    })
+
+    request = Request(
+        API_URL + "?" + query,
+        headers={
+            "User-Agent": "AdoFanHubResearch/0.1",
+            "Accept": "application/json",
+        },
+    )
+
+    with urlopen(request, timeout=15) as response:
+        content_type = response.headers.get("Content-Type", "")
+        if "json" not in content_type.lower():
+            raise ValueError("Unexpected WordPress content type")
+
+        total_header = response.headers.get("X-WP-Total")
+        if total_header is None:
+            raise ValueError("WordPress total header unavailable")
+
+        total = int(total_header)
+        if total < 0:
+            raise ValueError("Invalid WordPress total")
+
+        raw = response.read(2000001)
+
+    if len(raw) > 2000000:
+        raise ValueError("WordPress response too large")
+
+    posts = json.loads(raw)
+    if not isinstance(posts, list):
+        raise ValueError("Unexpected WordPress response")
+
+    items = [parse_post(post) for post in posts]
+    items.sort(
+        key=lambda item: (item.published_at, item.id),
+        reverse=True,
+    )
+    return items, total
