@@ -11,9 +11,10 @@ from contextlib import closing, contextmanager
 from pathlib import Path
 from typing import Literal
 
-from fastapi import APIRouter, Header, HTTPException, Request, Response
+from fastapi import APIRouter, BackgroundTasks, Header, HTTPException, Request, Response
 import psycopg
 import reports_postgres
+from reports_discord_full import send_new_report
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 router = APIRouter(prefix="/api/reports", tags=["Reports"])
@@ -144,7 +145,7 @@ def postgres_failure(error):
     raise HTTPException(503, "Reports temporarily unavailable") from None
 
 @router.post("", status_code=201)
-def submit(data: ReportInput, request: Request, response: Response, authorization: str | None = Header(default=None)):
+def submit(data: ReportInput, request: Request, response: Response, background_tasks: BackgroundTasks, authorization: str | None = Header(default=None)):
     owner, ip = identity(request, authorization)
     response.headers["Cache-Control"] = "no-store"
     payload = data.model_dump_json()
@@ -163,6 +164,12 @@ def submit(data: ReportInput, request: Request, response: Response, authorizatio
             postgres_failure(error)
         if not created:
             response.status_code = 200
+        else:
+            background_tasks.add_task(
+                send_new_report,
+                result["id"],
+                data,
+            )
         return result
 
     fingerprint = hashlib.sha256(payload.encode()).hexdigest()
