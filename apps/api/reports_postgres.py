@@ -92,7 +92,7 @@ def submit_report(owner, ip, request_id, payload):
         with conn.cursor() as cur:
             # Protect the check/insert and shared rate-limit sequence.
             cur.execute(
-                "SELECT pg_advisory_xact_lock(%s)",
+                "SELECT pg_advisory_xact_lock(%s::bigint)",
                 (RATE_LOCK_ID,),
             )
 
@@ -160,7 +160,7 @@ def list_own_reports(owner, ip):
     with connect() as conn:
         with conn.cursor() as cur:
             cur.execute(
-                "SELECT pg_advisory_xact_lock(%s)",
+                "SELECT pg_advisory_xact_lock(%s::bigint)",
                 (RATE_LOCK_ID,),
             )
             throttle(cur, "read-ip:" + ip, 120, now)
