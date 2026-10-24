@@ -1,3 +1,4 @@
+import SupportCard from '@/components/support-card';
 import { HeroGeometry, MotionShortcut } from '@/components/home-motion';
 import { useState } from 'react';
 import { ActivityIndicator, Image, Linking, Platform, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
@@ -98,6 +99,7 @@ export default function HomeScreen() {
       <Pressable accessibilityRole="button" onPress={() => router.push('/about')} style={({ pressed }) => [s.aboutCard, pressed && s.pressed]}>
         <Text style={s.eyebrow}>BEHIND THE MUSIC</Text><Text style={s.heading}>{w.about} →</Text><Text style={s.body}>{w.aboutNote}</Text>
       </Pressable>
+      <SupportCard />
       <Text style={s.footer}>{w.footer}</Text>
     </RoseScrollView>
   </SafeAreaView>;
