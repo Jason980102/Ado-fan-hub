@@ -76,7 +76,7 @@ def send_new_report(case_id, report):
         request = urllib.request.Request(
             webhook,
             data=data,
-            headers={"Content-Type": "application/json"},
+            headers={"Content-Type": "application/json", "User-Agent": "AdoFanHubReports/1.0"},
             method="POST",
         )
 
