@@ -12,6 +12,8 @@ from pathlib import Path
 from typing import Literal
 
 from fastapi import APIRouter, Header, HTTPException, Request, Response
+import psycopg
+import reports_postgres
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 router = APIRouter(prefix="/api/reports", tags=["Reports"])
@@ -118,11 +120,43 @@ def receipt(row):
             "status": row["status"], "created_at": row["created_at"], "updated_at": row["updated_at"]}
 
 
+def postgres_enabled():
+    return os.environ.get("ADO_REPORTS_STORE", "sqlite") == "postgres"
+
+
+def postgres_failure(error):
+    if isinstance(error, reports_postgres.ReportConflict):
+        raise HTTPException(409, str(error)) from None
+    if isinstance(error, reports_postgres.ReportRateLimited):
+        raise HTTPException(
+            429,
+            "Too many requests; try later",
+            headers={"Retry-After": str(error.retry_after)},
+        ) from None
+    raise HTTPException(503, "Reports temporarily unavailable") from None
+
 @router.post("", status_code=201)
 def submit(data: ReportInput, request: Request, response: Response, authorization: str | None = Header(default=None)):
     owner, ip = identity(request, authorization)
     response.headers["Cache-Control"] = "no-store"
     payload = data.model_dump_json()
+    if postgres_enabled():
+        try:
+            result, created = reports_postgres.submit_report(
+                owner, ip, data.request_id, payload
+            )
+        except (
+            reports_postgres.ReportConflict,
+            reports_postgres.ReportRateLimited,
+            psycopg.Error,
+            RuntimeError,
+            OSError,
+        ) as error:
+            postgres_failure(error)
+        if not created:
+            response.status_code = 200
+        return result
+
     fingerprint = hashlib.sha256(payload.encode()).hexdigest()
     now = int(time.time())
     with connection() as db, db:
@@ -148,6 +182,17 @@ def submit(data: ReportInput, request: Request, response: Response, authorizatio
 def records(request: Request, response: Response, authorization: str | None = Header(default=None)):
     owner, ip = identity(request, authorization)
     response.headers["Cache-Control"] = "no-store"
+    if postgres_enabled():
+        try:
+            return reports_postgres.list_own_reports(owner, ip)
+        except (
+            reports_postgres.ReportRateLimited,
+            psycopg.Error,
+            RuntimeError,
+            OSError,
+        ) as error:
+            postgres_failure(error)
+
     with connection() as db, db:
         db.execute("BEGIN IMMEDIATE")
         throttle(db, "read-ip:" + ip, 120, int(time.time()))

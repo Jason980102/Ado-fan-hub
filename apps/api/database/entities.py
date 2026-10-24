@@ -295,3 +295,7 @@ class XApiBudget(Base):
             name="ck_x_budget_internal_limit",
         ),
     )
+
+
+# Register analytics mappings for Alembic metadata.
+from database.analytics_models import AnalyticsChannelSnapshot, AnalyticsVideoSnapshot  # noqa: F401,E402

@@ -1,10 +1,12 @@
-"""Read-only seven-day comparisons from locally recorded snapshots."""
+"""Read-only seven-day comparisons from PostgreSQL snapshots."""
 from datetime import datetime, timedelta
 import os
 import re
-import sqlite3
 from fastapi import APIRouter, HTTPException
-from analytics_store import initialize_database, _connect
+from sqlalchemy import func, select
+from sqlalchemy.exc import SQLAlchemyError
+from analytics_store import C, V, iso
+from database.session import create_db_engine
 
 router = APIRouter(prefix='/api/analytics', tags=['Analytics'])
 
@@ -25,44 +27,60 @@ def comparison(rows, fields):
     }
 
 
+def _read_growth(db, channel_id):
+    empty = {'channel_id': channel_id, 'channel': None, 'mv_period': None, 'videos': [], 'excluded': 0}
+
+    def boundary(table, aggregate, upper=None):
+        query = select(aggregate(table.c.fetched_at)).where(table.c.channel_id == channel_id)
+        if upper is not None:
+            query = query.where(table.c.fetched_at <= upper)
+        return db.scalar(query)
+
+    latest = boundary(C, func.max)
+    if latest is None:
+        return empty
+    target = latest - timedelta(days=7)
+    baseline = boundary(C, func.max, target)
+    channel_rows = [dict(row) for row in db.execute(select(C).where(
+        C.c.channel_id == channel_id, C.c.fetched_at >= (baseline or target))
+        .order_by(C.c.fetched_at)).mappings()]
+    for row in channel_rows:
+        row['fetched_at'] = iso(row['fetched_at'])
+    channel = comparison(channel_rows, ['subscriber_count', 'view_count', 'video_count'])
+    mv_latest = boundary(V, func.max)
+    if mv_latest is None:
+        return {**empty, 'channel': channel}
+    mv_first = boundary(V, func.max, mv_latest - timedelta(days=7))
+    partial = mv_first is None
+    if mv_first is None:
+        mv_first = boundary(V, func.min)
+    first = V.alias('first')
+    rows = db.execute(select(V, first.c.view_count.label('baseline_views')).select_from(
+        V.outerjoin(first, (first.c.channel_id == V.c.channel_id)
+                    & (first.c.video_id == V.c.video_id) & (first.c.fetched_at == mv_first)))
+        .where(V.c.channel_id == channel_id, V.c.fetched_at == mv_latest)).mappings().all()
+    videos = []
+    for row in rows:
+        if mv_first == mv_latest or row['baseline_views'] is None or row['view_count'] is None:
+            continue
+        videos.append({'id': row['video_id'], 'title': row['title'], 'thumbnail_url': row['thumbnail_url'],
+                       'view_count': row['view_count'], 'delta': row['view_count'] - row['baseline_views']})
+    videos.sort(key=lambda item: (-item['delta'], item['id']))
+    return {'channel_id': channel_id, 'channel': channel,
+            'mv_period': {'from': iso(mv_first), 'to': iso(mv_latest), 'partial': partial},
+            'videos': videos[:10], 'excluded': len(rows) - len(videos)}
+
+
 def read_growth(channel_id):
-    initialize_database()
-    db = _connect()
+    engine = create_db_engine()
     try:
-        # Keep all reads on the same database snapshot, including a concurrent sync.
-        db.execute('BEGIN')
-        latest = db.execute('SELECT MAX(fetched_at) FROM channel_snapshots WHERE channel_id=?', (channel_id,)).fetchone()[0]
-        if latest is None:
-            return {'channel_id': channel_id, 'channel': None, 'mv_period': None, 'videos': [], 'excluded': 0}
-        target = (datetime.fromisoformat(latest) - timedelta(days=7)).isoformat()
-        # One observation preceding the boundary plus the observed seven-day window.
-        baseline = db.execute('SELECT MAX(fetched_at) FROM channel_snapshots WHERE channel_id=? AND fetched_at<=?', (channel_id, target)).fetchone()[0]
-        channel_rows = db.execute('SELECT * FROM channel_snapshots WHERE channel_id=? AND fetched_at>=? ORDER BY fetched_at', (channel_id, baseline or target)).fetchall()
-        channel = comparison(channel_rows, ['subscriber_count', 'view_count', 'video_count'])
-        mv_latest = db.execute('SELECT MAX(fetched_at) FROM video_snapshots WHERE channel_id=?', (channel_id,)).fetchone()[0]
-        if not mv_latest:
-            return {'channel_id': channel_id, 'channel': channel, 'mv_period': None, 'videos': [], 'excluded': 0}
-        mv_target = (datetime.fromisoformat(mv_latest) - timedelta(days=7)).isoformat()
-        mv_first = db.execute('SELECT MAX(fetched_at) FROM video_snapshots WHERE channel_id=? AND fetched_at<=?', (channel_id, mv_target)).fetchone()[0]
-        partial = mv_first is None
-        if mv_first is None:
-            mv_first = db.execute('SELECT MIN(fetched_at) FROM video_snapshots WHERE channel_id=?', (channel_id,)).fetchone()[0]
-        rows = db.execute('''SELECT last.*, first.view_count AS baseline_views
-            FROM video_snapshots AS last LEFT JOIN video_snapshots AS first
-            ON first.channel_id=last.channel_id AND first.video_id=last.video_id AND first.fetched_at=?
-            WHERE last.channel_id=? AND last.fetched_at=?''', (mv_first, channel_id, mv_latest)).fetchall()
-        videos = []
-        for row in rows:
-            if mv_first == mv_latest or row['baseline_views'] is None or row['view_count'] is None:
-                continue
-            videos.append({'id': row['video_id'], 'title': row['title'], 'thumbnail_url': row['thumbnail_url'],
-                           'view_count': row['view_count'], 'delta': row['view_count'] - row['baseline_views']})
-        videos.sort(key=lambda item: (-item['delta'], item['id']))
-        return {'channel_id': channel_id, 'channel': channel,
-                'mv_period': {'from': mv_first, 'to': mv_latest, 'partial': partial},
-                'videos': videos[:10], 'excluded': len(rows) - len(videos)}
+        # A concurrent sync must not split the channel/video comparison across snapshots.
+        with engine.connect().execution_options(isolation_level='REPEATABLE READ',
+                                                 postgresql_readonly=True) as db:
+            with db.begin():
+                return _read_growth(db, channel_id)
     finally:
-        db.close()
+        engine.dispose()
 
 
 @router.get('/youtube/growth')
@@ -72,5 +90,5 @@ def youtube_growth():
         raise HTTPException(503, 'YouTube channel configuration is invalid')
     try:
         return read_growth(channel_id)
-    except (sqlite3.Error, OSError, ValueError):
+    except (SQLAlchemyError, OSError, ValueError, RuntimeError):
         raise HTTPException(503, 'Growth history is temporarily unavailable') from None

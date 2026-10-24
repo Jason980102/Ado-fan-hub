@@ -11,7 +11,7 @@ from urllib.request import Request, urlopen
 
 from fastapi import APIRouter, HTTPException, Query, Response
 from pydantic import BaseModel
-import sqlite3
+from sqlalchemy.exc import SQLAlchemyError
 from analytics_store import (
     initialize_database,
     read_channel_history,
@@ -274,7 +274,7 @@ def youtube_analytics():
             save_channel_snapshot(result)
         except HTTPException:
             raise
-        except sqlite3.Error:
+        except (SQLAlchemyError, RuntimeError):
             raise HTTPException(
                 status_code=503,
                 detail="Analytics snapshot storage is temporarily unavailable",
@@ -389,7 +389,7 @@ def youtube_history(
         points = read_channel_history(
             channel_id, since.isoformat(), limit + 1
         )
-    except (sqlite3.Error, OSError):
+    except (SQLAlchemyError, RuntimeError, OSError, ValueError):
         raise HTTPException(
             status_code=503,
             detail="Analytics history is temporarily unavailable",

@@ -415,7 +415,12 @@ def _fetch_catalog(api_key, channel_id):
     found = {v.id for v in videos}
     return CatalogResponse(
         fetched_at=datetime.now(timezone.utc),
-        partial=any(not s.available for s in sources), sources=sources,
+        partial=any(
+            not s.available
+            for s in sources
+            if s.id != feed_source_id
+        ),
+        sources=sources,
         videos=sorted({v.id: v for v in videos}.values(), key=lambda v: v.id),
         unavailable_video_ids=[vid for vid in ids if vid not in found and vid not in nonmusic_ids],
     )
