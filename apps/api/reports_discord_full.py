@@ -83,11 +83,15 @@ def send_new_report(case_id, report):
         try:
             with urllib.request.urlopen(request, timeout=3):
                 pass
-        except (urllib.error.URLError, OSError, ValueError):
-            # Do not print exception: it might contain the webhook URL.
+        except urllib.error.HTTPError as error:
             log.warning(
-                "Discord report delivery failed: case=%s part=%s",
-                case_id,
-                index,
+                "Discord delivery HTTP failure: case=%s part=%s status=%s",
+                case_id, index, error.code,
+            )
+            return
+        except (urllib.error.URLError, OSError, ValueError) as error:
+            log.warning(
+                "Discord delivery network failure: case=%s part=%s type=%s",
+                case_id, index, type(error).__name__,
             )
             return
