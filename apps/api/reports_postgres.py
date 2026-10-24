@@ -59,13 +59,13 @@ def throttle(cur, key, maximum, now):
     cur.execute(
         """
         INSERT INTO reports_rate_limits
-            (key, window, count)
+            (key, "window", count)
         VALUES (%s, %s, 1)
         ON CONFLICT (key)
         DO UPDATE SET
-            window = EXCLUDED.window,
+            "window" = EXCLUDED."window",
             count = CASE
-                WHEN reports_rate_limits.window = EXCLUDED.window
+                WHEN reports_rate_limits."window" = EXCLUDED."window"
                 THEN reports_rate_limits.count + 1
                 ELSE 1
             END
@@ -117,7 +117,7 @@ def submit_report(owner, ip, request_id, payload):
             throttle(cur, "submit-global", 500, now)
 
             cur.execute(
-                "DELETE FROM reports_rate_limits WHERE window < %s",
+                """DELETE FROM reports_rate_limits WHERE "window" < %s""",
                 (now // 3600 - 24,),
             )
 
